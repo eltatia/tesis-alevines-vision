@@ -1,0 +1,19 @@
+# =====================================================
+# Configuración del dataset YOLO para detección de alevines
+# =====================================================
+# 'path' es relativo al directorio donde se ejecuta el entrenamiento.
+# Si entrenas desde la raíz del proyecto: path: data/dataset_yolo
+# Si entrenas desde scripts/: path: ../data/dataset_yolo
+# =====================================================
+
+path: ../data/dataset_yolo  # raíz del dataset (relativa a scripts/)
+train: images/train
+val: images/val
+test: images/test
+
+# Número de clases
+nc: 1
+
+# Nombres de clases (clase única: alevin)
+names:
+  0: alevin

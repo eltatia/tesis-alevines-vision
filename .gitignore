@@ -1,0 +1,103 @@
+# ===== Entorno Python =====
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ===== Datos pesados (imágenes y videos): NO versionar =====
+data/raw/images/*
+data/raw/videos/*
+data/frames/all/*
+data/frames/selected/*
+data/dataset_yolo/images/train/*
+data/dataset_yolo/images/val/*
+data/dataset_yolo/images/test/*
+# Las labels YOLO sí se versionan (son chicas y son el trabajo manual valioso)
+# data/dataset_yolo/labels/* SI se versionan
+
+# Excluir SOLO imágenes en carpetas de etiquetado (las .txt SI van)
+data/labeling/*.jpg
+data/labeling/*.jpeg
+data/labeling/*.png
+data/labeling/*.bmp
+data/labeling/*.webp
+data/labeling_subset/*.jpg
+data/labeling_subset/*.jpeg
+data/labeling_subset/*.png
+data/labeling_subset/*.bmp
+data/labeling_subset/*.webp
+data/labeling_subset_backup/*.jpg
+data/labeling_subset_backup/*.jpeg
+data/labeling_test/*.jpg
+data/labeling_test/*.jpeg
+data/labeling_collab/**/*.jpg
+data/labeling_collab/**/*.jpeg
+data/labeling_collab/**/*.png
+# Excluir el venv local que se genera al ejecutar setup.bat en el lote
+data/labeling_collab/**/venv/
+
+# Mantener .gitkeep en carpetas vacías
+!**/.gitkeep
+
+# ===== Modelos y corridas (pesados) =====
+models/yolov8n/*
+models/yolov8s/*
+models/exports/*
+!models/**/.gitkeep
+runs/
+*.pt
+*.onnx
+*.tflite
+*.torchscript
+
+# ===== Reportes generados =====
+reports/imagenes_resultado/*
+reports/graficos/*
+reports/auto_label_viz/
+reports/preview/thumbs/
+reports/samples/
+reports/inventario.json
+!reports/**/.gitkeep
+reports/metricas_modelo.csv
+reports/resultados_conteo.csv
+reports/duplicates_report.csv
+
+# ===== Conteos predichos (se regeneran) =====
+data/counts/conteo_predicho.csv
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Notebooks (output limpio) =====
+# Si quieres versionar outputs, comenta la línea siguiente
+# *.ipynb
+
+# ===== Pesos descargados de Ultralytics =====
+yolov8n.pt
+yolov8s.pt
+yolov8m.pt
+yolov8l.pt
+yolov8x.pt
+yolo11n.pt
+yolo11s.pt
