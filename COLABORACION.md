@@ -36,34 +36,23 @@ git clone https://github.com/eltatia/tesis-alevines-vision.git
 cd tesis-alevines-vision
 ```
 
-Eso te baja todo el código + las etiquetas YOLO (no las imágenes, esas pesan demasiado).
+Eso te baja **todo lo necesario**: el código, las etiquetas YOLO (.txt) **y las 58 imágenes .jpg** del lote que vas a revisar. Ya **no** necesitas descargar nada desde Google Drive.
 
----
-
-## 3. Descargar las imágenes desde el Drive
-
-El responsable principal te va a pasar un **link de Google Drive** con un archivo llamado `lote_companero.zip` (~66 MB).
-
-1. Abre el link y descarga el ZIP.
-2. **Descomprime** el ZIP.
-3. Ubica la carpeta `lote_companero` que sale al descomprimir.
-4. Cópiala/muévela a la siguiente ruta dentro del repo que clonaste:
+Para confirmar que las imágenes llegaron, verifica que esta carpeta tenga archivos `.jpg`:
 
 ```
 tesis-alevines-vision\data\labeling_collab\lote_companero\
 ```
 
-⚠️ La carpeta `labeling_collab\lote_companero\` ya existe en el repo (tiene los .txt). Solo tienes que copiar las **imágenes .jpg** dentro de la carpeta existente, o reemplazar la carpeta completa.
-
-Resultado correcto:
+Debe verse así:
 
 ```
 tesis-alevines-vision/
 └── data/
     └── labeling_collab/
         └── lote_companero/
-            ├── *.jpg              ← (58 archivos) descargados del Drive
-            ├── *.txt              ← (58 archivos) ya estaban del git clone
+            ├── *.jpg              ← (58 archivos) ya vienen con el git clone
+            ├── *.txt              ← (58 archivos) etiquetas pre-generadas
             ├── classes.txt
             ├── INSTRUCCIONES.txt
             ├── setup.bat          ← lo vas a usar abajo
