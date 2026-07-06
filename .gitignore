@@ -41,6 +41,9 @@ data/labeling_test/*.jpeg
 data/labeling_collab/**/*.jpg
 data/labeling_collab/**/*.jpeg
 data/labeling_collab/**/*.png
+# EXCEPCIÓN: SÍ subir las imágenes del lote del compañero, para que
+# pueda etiquetar solo con git clone/pull (sin depender de Google Drive).
+!data/labeling_collab/lote_companero/*.jpg
 # Excluir el venv local que se genera al ejecutar setup.bat en el lote
 data/labeling_collab/**/venv/
 
