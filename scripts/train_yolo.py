@@ -46,6 +46,9 @@ def parse_args() -> argparse.Namespace:
                         help="Semilla para reproducibilidad")
     parser.add_argument("--resume", action="store_true",
                         help="Reanudar desde la última corrida con el mismo --name")
+    parser.add_argument("--workers", type=int, default=0,
+                        help="Workers del DataLoader. En Windows usa 0 para evitar crashes "
+                             "de multiprocessing (default: 0)")
     return parser.parse_args()
 
 
@@ -77,6 +80,7 @@ def main() -> None:
         patience=args.patience,
         seed=args.seed,
         resume=args.resume,
+        workers=args.workers,
         # Augmentations YOLO por defecto (mosaic, mixup, hsv, flip) ya activos.
         # Aquí puedes sobrescribir si hace falta:
         # mosaic=1.0, mixup=0.1, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4,

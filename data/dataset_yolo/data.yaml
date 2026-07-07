@@ -1,12 +1,11 @@
 # =====================================================
 # Configuración del dataset YOLO para detección de alevines
 # =====================================================
-# 'path' es relativo al directorio donde se ejecuta el entrenamiento.
-# Si entrenas desde la raíz del proyecto: path: data/dataset_yolo
-# Si entrenas desde scripts/: path: ../data/dataset_yolo
+# Ruta ABSOLUTA para evitar ambigüedad al resolver el dataset
+# (Ultralytics resuelve rutas relativas contra su datasets_dir, no contra el cwd).
 # =====================================================
 
-path: ../data/dataset_yolo  # raíz del dataset (relativa a scripts/)
+path: C:/Users/Usuario/TESIS/data/dataset_yolo  # raíz del dataset (absoluta)
 train: images/train
 val: images/val
 test: images/test
