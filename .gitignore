@@ -20,8 +20,13 @@ data/frames/selected/*
 data/dataset_yolo/images/train/*
 data/dataset_yolo/images/val/*
 data/dataset_yolo/images/test/*
-# Las labels YOLO sí se versionan (son chicas y son el trabajo manual valioso)
-# data/dataset_yolo/labels/* SI se versionan
+# El dataset_yolo es DERIVADO (se regenera con build_baseline_dataset.py a
+# partir de data/labeling_subset/*.txt, que sí se versionan). No versionamos
+# el split para evitar duplicar el trabajo manual y ensuciar el repo.
+data/dataset_yolo/labels/train/*
+data/dataset_yolo/labels/val/*
+data/dataset_yolo/labels/test/*
+*.cache
 
 # Excluir SOLO imágenes en carpetas de etiquetado (las .txt SI van)
 data/labeling/*.jpg

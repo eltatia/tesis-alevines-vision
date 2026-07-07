@@ -1,0 +1,385 @@
+<title>Informe — Conteo automático de alevines</title>
+<style>
+  :root {
+    --paper: #f6f8f8;
+    --surface: #ffffff;
+    --surface-2: #eef2f2;
+    --ink: #10201f;
+    --ink-soft: #43585a;
+    --ink-faint: #6b8082;
+    --line: #d9e2e2;
+    --accent: #0e6b74;
+    --accent-bright: #12909c;
+    --good: #1f8a5b;
+    --good-bg: #e3f3ea;
+    --warn: #b9781f;
+    --warn-bg: #f7ecd8;
+    --crit: #b23b3b;
+    --shadow: 0 1px 2px rgba(16,32,31,.05), 0 6px 20px rgba(16,32,31,.06);
+    --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'Cascadia Code', 'Consolas', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0b1516; --surface: #0f1e1f; --surface-2: #14282a;
+      --ink: #e7f0ef; --ink-soft: #a9bcbb; --ink-faint: #7c9291;
+      --line: #22383a; --accent: #2bb4c0; --accent-bright: #46cdd8;
+      --good: #46c489; --good-bg: #133226; --warn: #d99a3d; --warn-bg: #33280f;
+      --crit: #e07a7a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 26px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#f6f8f8; --surface:#fff; --surface-2:#eef2f2; --ink:#10201f; --ink-soft:#43585a;
+    --ink-faint:#6b8082; --line:#d9e2e2; --accent:#0e6b74; --accent-bright:#12909c;
+    --good:#1f8a5b; --good-bg:#e3f3ea; --warn:#b9781f; --warn-bg:#f7ecd8; --crit:#b23b3b;
+    --shadow:0 1px 2px rgba(16,32,31,.05),0 6px 20px rgba(16,32,31,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0b1516; --surface:#0f1e1f; --surface-2:#14282a; --ink:#e7f0ef; --ink-soft:#a9bcbb;
+    --ink-faint:#7c9291; --line:#22383a; --accent:#2bb4c0; --accent-bright:#46cdd8;
+    --good:#46c489; --good-bg:#133226; --warn:#d99a3d; --warn-bg:#33280f; --crit:#e07a7a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--font-body); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+  .reading { max-width: 760px; }
+  h1,h2,h3 { text-wrap: balance; line-height: 1.15; }
+  code, .mono, td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); }
+
+  /* Header / theme toggle */
+  .topbar { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 54px; }
+  .brand { font-family: var(--font-mono); font-size: 13px; letter-spacing: .04em; color: var(--ink-soft); }
+  .brand b { color: var(--accent); }
+  .toggle { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: var(--font-body); }
+  .toggle:hover { color: var(--ink); border-color: var(--accent); }
+  .toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Hero */
+  .hero { padding: 64px 0 40px; border-bottom: 1px solid var(--line); }
+  .eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 18px; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 46px);
+    margin: 0 0 18px; letter-spacing: -.01em; }
+  .hero p.lede { font-size: 18px; color: var(--ink-soft); margin: 0; max-width: 680px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-top: 28px; font-size: 13.5px; color: var(--ink-faint); }
+  .meta-row b { color: var(--ink-soft); font-weight: 600; }
+
+  /* KPI band */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0 8px; }
+  @media (max-width: 720px){ .kpis { grid-template-columns: repeat(2,1fr); } }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--accent); }
+  .kpi .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 30px; font-weight: 600;
+    color: var(--ink); letter-spacing: -.01em; }
+  .kpi .l { font-size: 12.5px; color: var(--ink-faint); margin-top: 6px; line-height: 1.35; }
+  .kpi.good::before { background: var(--good); }
+  .kpi .tag { display:inline-block; font-size:11px; margin-top:8px; padding:2px 8px; border-radius:999px;
+    background: var(--good-bg); color: var(--good); font-weight:600; }
+
+  section { padding: 46px 0; border-bottom: 1px solid var(--line); }
+  .snum { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); letter-spacing: .1em; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 26px; margin: 8px 0 20px; }
+  h3 { font-size: 16px; margin: 26px 0 8px; color: var(--ink); }
+  p { margin: 0 0 14px; }
+  .reading p, .reading li { color: var(--ink-soft); }
+  strong { color: var(--ink); }
+
+  /* Tables */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--surface); }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  thead th { background: var(--surface-2); color: var(--ink-soft); font-weight: 600; font-size: 12.5px;
+    letter-spacing: .02em; position: sticky; top: 0; }
+  td.num, th.num { text-align: right; }
+  tbody tr:last-child td { border-bottom: none; }
+  tr.win td { background: color-mix(in srgb, var(--good) 9%, var(--surface)); }
+  tr.win td:first-child { font-weight: 700; color: var(--ink); box-shadow: inset 3px 0 0 var(--good); }
+  .best { color: var(--good); font-weight: 700; }
+  .cap { font-size: 12.5px; color: var(--ink-faint); margin-top: 10px; }
+
+  /* Callouts */
+  .callout { border-radius: 12px; padding: 18px 20px; margin: 22px 0; border: 1px solid var(--line);
+    background: var(--surface); box-shadow: var(--shadow); }
+  .callout .k { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; margin-bottom: 6px; }
+  .callout.finding { border-left: 4px solid var(--accent); }
+  .callout.finding .k { color: var(--accent); }
+  .callout.warn { border-left: 4px solid var(--warn); background: color-mix(in srgb, var(--warn) 6%, var(--surface)); }
+  .callout.warn .k { color: var(--warn); }
+  .callout p { margin: 0; color: var(--ink-soft); }
+
+  /* Method / roadmap cards */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 680px){ .cards { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px;
+    box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .steps li::before { content: counter(s); font-family: var(--font-mono); font-weight: 600; font-size: 14px;
+    color: var(--accent); background: var(--surface-2); border-radius: 8px; width: 34px; height: 34px;
+    display: grid; place-items: center; }
+  .steps b { color: var(--ink); }
+  .steps span { color: var(--ink-soft); font-size: 13.5px; }
+
+  ul.clean { padding-left: 18px; }
+  ul.clean li { margin: 6px 0; }
+  .refs { font-size: 13px; color: var(--ink-soft); }
+  .refs ol { padding-left: 20px; }
+  .refs li { margin: 7px 0; }
+  .refs a { word-break: break-word; }
+  footer { padding: 34px 0 60px; color: var(--ink-faint); font-size: 13px; }
+  .pill { display:inline-block; font-family:var(--font-mono); font-size:12px; padding:2px 9px; border-radius:999px;
+    background: var(--surface-2); color: var(--ink-soft); border:1px solid var(--line); }
+  @media (prefers-reduced-motion: no-preference){ html { scroll-behavior: smooth; } }
+</style>
+
+<div class="topbar">
+  <div class="wrap">
+    <span class="brand">CITE&nbsp;Madre&nbsp;de&nbsp;Dios · <b>conteo de alevines</b></span>
+    <button class="toggle" id="themeBtn" aria-label="Cambiar tema">◐ Tema</button>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Informe técnico de avance · Tesis 2026</p>
+    <h1>Conteo automático de alevines con visión artificial y deep learning</h1>
+    <p class="lede">Un pipeline de detección y conteo con YOLO, validado de extremo a extremo sobre imágenes reales de alevines. Comparación de cuatro modelos, métodos tomados de la literatura del dominio y una lectura honesta de resultados y limitaciones.</p>
+    <div class="meta-row">
+      <span><b>Autor:</b> Gabriel Quispe Barra</span>
+      <span><b>Institución:</b> CITE Productivo Madre de Dios</span>
+      <span><b>Fecha:</b> 6 jul 2026</span>
+      <span><b>Estado:</b> Baseline validado</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="kpis">
+    <div class="kpi good">
+      <div class="v">2.69<span style="font-size:18px">%</span></div>
+      <div class="l">Error medio de conteo (MAPE) del mejor modelo, sobre imágenes nunca vistas</div>
+      <span class="tag">meta &lt; 15% ✓</span>
+    </div>
+    <div class="kpi good">
+      <div class="v">0.991</div>
+      <div class="l">R² entre conteo automático y conteo real (manual)</div>
+      <span class="tag">casi perfecto</span>
+    </div>
+    <div class="kpi good">
+      <div class="v">97.3<span style="font-size:18px">%</span></div>
+      <div class="l">Exactitud de conteo por imagen (YOLOv11n)</div>
+      <span class="tag">competitivo</span>
+    </div>
+    <div class="kpi">
+      <div class="v">5 363</div>
+      <div class="l">Alevines anotados a mano en 61 imágenes revisadas</div>
+    </div>
+  </div>
+
+  <section>
+    <span class="snum">01 — Resultado principal</span>
+    <h2>El mejor detector no es el mejor contador</h2>
+    <div class="reading">
+      <p>Se compararon cuatro configuraciones sobre el mismo conjunto de prueba (imágenes que el modelo nunca vio). El modelo con mejor detección pura (mAP) <strong>no</strong> resultó ser el mejor para la tarea que realmente importa en la tesis: <strong>contar</strong>. Por eso la elección del modelo se hace por el error de conteo (MAPE, R²), no por el mAP.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Modelo</th>
+            <th class="num">mAP@50</th>
+            <th class="num">mAP@50-95</th>
+            <th class="num">MAPE conteo</th>
+            <th class="num">R²</th>
+            <th class="num">Exactitud</th>
+            <th class="num">Sesgo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>YOLOv8n</td>
+            <td class="num">0.820</td><td class="num">0.472</td>
+            <td class="num">7.77%</td><td class="num">0.943</td><td class="num">92.2%</td><td class="num">−1.5</td>
+          </tr>
+          <tr>
+            <td>YOLOv8s</td>
+            <td class="num best">0.843</td><td class="num best">0.491</td>
+            <td class="num">8.54%</td><td class="num">0.915</td><td class="num">91.5%</td><td class="num">+19.0</td>
+          </tr>
+          <tr class="win">
+            <td>YOLOv11n</td>
+            <td class="num">0.791</td><td class="num">0.452</td>
+            <td class="num best">2.69%</td><td class="num best">0.991</td><td class="num best">97.3%</td><td class="num">−4.0</td>
+          </tr>
+          <tr>
+            <td>YOLOv11n · 1280px</td>
+            <td class="num">0.836</td><td class="num">0.491</td>
+            <td class="num">5.89%</td><td class="num">0.970</td><td class="num">94.1%</td><td class="num">−2.5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">Test set: 6 imágenes, 1 123 alevines. Umbral de confianza calibrado por modelo para minimizar el error de conteo. Fila resaltada = modelo recomendado. <span class="best">Verde</span> = mejor valor de la columna.</p>
+
+    <div class="callout finding">
+      <div class="k">Hallazgo</div>
+      <p><strong>YOLOv11n</strong> logra un error de conteo de <strong>2.69% (MAPE)</strong> y <strong>R² = 0.991</strong>, cifras competitivas —e incluso mejores— que el referente directo de la literatura (Carvalho et al. 2024: MAPE 4.46–4.71% en larvas fotografiadas con smartphone). A nivel de lote contó 1 099 de 1 123 alevines reales.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">02 — Datos</span>
+    <h2>Qué hay y de dónde viene</h2>
+    <div class="cards">
+      <div class="card"><h3>2 videos · ~22 min</h3><p>Una sola sesión de grabación (5 mayo, 15:45–15:52). De ahí, 897 frames extraídos.</p></div>
+      <div class="card"><h3>178 fotos + 897 frames</h3><p>1 075 imágenes con auto-etiquetas de IA (SAM/FastSAM) como punto de partida.</p></div>
+      <div class="card"><h3>61 imágenes revisadas</h3><p>Corregidas a mano — el material del baseline. Etiquetado en curso con colaborador para llegar a 114.</p></div>
+      <div class="card"><h3>5 363 alevines · 64–273/img</h3><p>Ground truth de conteo = número de cajas anotadas. Escenas densas con oclusión.</p></div>
+    </div>
+    <div class="callout warn">
+      <div class="k">Honestidad metodológica</div>
+      <p>Todos los datos provienen de <strong>una sola sesión</strong> (misma luz, recipiente y cámara). Las métricas son válidas como <em>held-out</em> pero optimistas para generalización. El alcance actual es <strong>prueba de concepto en entorno controlado</strong>; generalizar al CITE exige capturas en más condiciones.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">03 — Metodología</span>
+    <h2>Decisiones que hacen el trabajo riguroso</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Split anti-fuga de datos</h3>
+        <p>Frames de video casi idénticos inflarían las métricas si un split aleatorio los reparte entre train y test. Se dividió <strong>por video y en bloques temporales contiguos</strong>, no al azar.</p>
+      </div>
+      <div class="card">
+        <h3>Ground truth sin inventar</h3>
+        <p>El conteo real se toma del <strong>número de cajas anotadas</strong> por imagen: exacto y verificable. La estimación imprecisa del CITE es la <em>motivación</em>, no la referencia.</p>
+      </div>
+      <div class="card">
+        <h3>Calibración para conteo</h3>
+        <p>El umbral de confianza se barre y se elige el que <strong>minimiza el error de conteo</strong> (MAE), no el que maximiza el mAP — porque el objetivo es contar bien.</p>
+      </div>
+      <div class="card">
+        <h3>Métricas del dominio</h3>
+        <p>Se reportan MAE, RMSE, <strong>MAPE, R²</strong> y exactitud de conteo, además de Precision/Recall/mAP — el estándar de los papers del área.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">04 — Método de la literatura probado</span>
+    <h2>SAHI / tiling: probado, con resultado honesto</h2>
+    <div class="reading">
+      <p>SAHI (Akyon et al. 2022) es la técnica más citada para objetos pequeños y densos: parte la imagen en recortes solapados y detecta en cada uno. Se probó con un barrido de tamaño de tile y umbral.</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Configuración</th><th class="num">MAE</th><th class="num">MAPE</th><th class="num">Sesgo</th></tr></thead>
+        <tbody>
+          <tr><td>SAHI slice 640, conf 0.30</td><td class="num">25.7</td><td class="num">11.7%</td><td class="num">+25.7</td></tr>
+          <tr><td>SAHI slice 1024, conf 0.50 (mejor)</td><td class="num">7.8</td><td class="num">4.39%</td><td class="num">+2.2</td></tr>
+          <tr class="win"><td>Inferencia directa YOLOv11n (960px)</td><td class="num best">6.0</td><td class="num best">2.69%</td><td class="num">−4.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout finding">
+      <div class="k">Resultado negativo (documentado)</div>
+      <p>En este dataset SAHI <strong>no superó</strong> a la inferencia directa: los alevines ya quedan bien resueltos a 960px, así que el tiling solo añadió duplicados en los bordes de los recortes (sobreconteo). Es un experimento realizado y reportado con transparencia — SAHI ayudaría con imágenes mucho mayores respecto al tamaño del pez.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">05 — Posición frente a la literatura</span>
+    <h2>¿Qué tan bueno es el resultado?</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Trabajo</th><th>Escenario</th><th class="num">mAP@50</th><th class="num">Error de conteo</th></tr></thead>
+        <tbody>
+          <tr class="win"><td>Este trabajo (YOLOv11n)</td><td>Alevines, smartphone, 1 sesión</td><td class="num">0.791</td><td class="num best">MAPE 2.69% · R² 0.991</td></tr>
+          <tr><td>Carvalho et al. 2024</td><td>Larvas, smartphone, tiling</td><td class="num">—</td><td class="num">MAPE 4.46–4.71%</td></tr>
+          <tr><td>Souza et al. 2024</td><td>Alevines pirapitinga</td><td class="num">0.971</td><td class="num">~98% exactitud</td></tr>
+          <tr><td>Costa et al. 2022</td><td>Larvas tilapia, smartphone</td><td class="num">0.973</td><td class="num">—</td></tr>
+          <tr><td>Zhang et al. 2024</td><td>Peces densos (YOLOv8 mejorado)</td><td class="num">+6.2% AP</td><td class="num">MAE 2.28</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reading">
+      <p style="margin-top:16px"><strong>Lectura honesta:</strong> el <strong>mAP (0.79–0.84)</strong> queda por debajo del rango típico del nicho (0.93–0.98) — esperable con 61 imágenes de una sesión. Pero el <strong>error de conteo (2.69%) es competitivo</strong>. Justamente las técnicas del roadmap (más datos diversos, mayor resolución, atención para objetos pequeños) son lo que separaría el 0.79 actual de los 0.93–0.98 publicados: quedan como contribución con respaldo bibliográfico.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">06 — Limitaciones</span>
+    <h2>Lo que aún no se puede afirmar</h2>
+    <div class="reading">
+      <ul class="clean">
+        <li><strong>Dataset de una sola sesión</strong> → métricas optimistas para generalización; alcance = prueba de concepto controlada.</li>
+        <li><strong>Test pequeño (6 imágenes)</strong> → números sólidos pero con margen estadístico; se robustecen con k-fold y más datos.</li>
+        <li><strong>Escenas muy densas con oclusión</strong> → el conteo por detección tiene un techo físico en cúmulos amontonados.</li>
+        <li><strong>Video sin tracking</strong> → contar frame a frame duplicaría el mismo alevín; se resolverá con ByteTrack/OC-SORT contando IDs únicos.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <span class="snum">07 — Trabajo futuro</span>
+    <h2>Roadmap con respaldo bibliográfico</h2>
+    <ol class="steps">
+      <li><div><b>Ampliar diversidad de datos.</b> <span>2–3 capturas en días, luces y recipientes distintos — lo único que habilita afirmar generalización real.</span></div></li>
+      <li><div><b>Validación cruzada k-fold.</b> <span>Respetando el agrupamiento por sesión; reportar media ± desviación. Robustez con dataset pequeño.</span></div></li>
+      <li><div><b>Completar a 114 imágenes y re-entrenar.</b> <span>Etiquetado en curso con colaborador; comparar “61 vs 114” como ablación.</span></div></li>
+      <li><div><b>Tracking para video.</b> <span>ByteTrack / OC-SORT contando IDs únicos → evita el doble conteo entre frames.</span></div></li>
+      <li><div><b>Exportar a móvil.</b> <span>.tflite / .onnx con cuantización INT8; reportar tamaño (MB), FLOPs y FPS en el dispositivo.</span></div></li>
+      <li><div><b>Validación externa.</b> <span>Contra el dataset público <span class="pill">Fish fry · Wu 2024</span> para dar rigor comparativo.</span></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <span class="snum">08 — Referencias verificadas</span>
+    <h2>Fuentes</h2>
+    <div class="refs">
+      <ol>
+        <li>Carvalho et al. (2024). <em>Livestock Fish Larvae Counting using DETR and YOLO based Deep Networks.</em> arXiv:2408.05032 · <a href="https://arxiv.org/abs/2408.05032">arxiv.org/abs/2408.05032</a></li>
+        <li>Costa et al. (2022). <em>Deep learning applied in fish reproduction for counting larvae in images captured by smartphone.</em> Aquacultural Engineering · <a href="https://www.sciencedirect.com/science/article/abs/pii/S0144860922000012">sciencedirect</a></li>
+        <li>Souza et al. (2024). <em>Identification and Counting of Pirapitinga Fingerlings using Machine Learning.</em> Animals 14(20):2999 · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11506512/">pmc</a></li>
+        <li>Zhang et al. (2024). <em>A method for counting fish based on improved YOLOv8.</em> Aquacultural Engineering 107 · <a href="https://www.sciencedirect.com/science/article/abs/pii/S014486092400061X">sciencedirect</a></li>
+        <li>Duan et al. (2024). <em>Shrimp Larvae Counting Based on Improved YOLOv5 with Regional Segmentation.</em> Sensors 24(19):6328 · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11478650/">pmc</a></li>
+        <li>Wu et al. (2024). <em>A fish fry dataset for stocking density control and health assessment.</em> Data in Brief · Mendeley DOI 10.17632/y52ffd3xdc.1 · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11584590/">pmc</a></li>
+        <li>Akyon et al. (2022). <em>Slicing Aided Hyper Inference for Small Object Detection.</em> IEEE ICIP · <a href="https://arxiv.org/abs/2202.06934">arxiv.org/abs/2202.06934</a></li>
+        <li>Ultralytics docs — SAHI, k-fold, tracking, augmentation · <a href="https://docs.ultralytics.com/">docs.ultralytics.com</a></li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Generado a partir de resultados reales del repositorio · evidencia en <code>reports/</code>, <code>data/counts/</code> y <code>runs/detect/</code> · Entorno: Python 3.10, PyTorch 2.11 + CUDA, Ultralytics 8.3.40, GPU RTX 5070 Ti.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('themeBtn');
+    var root = document.documentElement;
+    btn.addEventListener('click', function () {
+      var cur = root.getAttribute('data-theme');
+      if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+  })();
+</script>
