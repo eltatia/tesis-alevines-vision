@@ -53,7 +53,8 @@ data/labeling_collab/**/*.png
 # EXCEPCIÓN: SÍ subir las imágenes de los lotes de etiquetado, para
 # etiquetar solo con git clone/pull (sin depender de Google Drive).
 !data/labeling_collab/lote_companero/*.jpg
-!data/labeling_collab/lote_nuevos_videos/*.jpg
+!data/labeling_collab/lote_nuevos_companero/*.jpg
+!data/labeling_collab/lote_nuevos_gabriel/*.jpg
 # Excluir el venv local que se genera al ejecutar setup.bat en el lote
 data/labeling_collab/**/venv/
 

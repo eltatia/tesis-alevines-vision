@@ -1,7 +1,7 @@
 INSTRUCCIONES PARA ETIQUETADO COLABORATIVO
 ==========================================
 
-Este lote contiene 120 imagenes de alevines con etiquetas
+Este lote contiene 60 imagenes de alevines con etiquetas
 pre-generadas automaticamente (cajas verdes ya dibujadas).
 
 Tu tarea: revisar cada imagen y CORREGIR las etiquetas.
