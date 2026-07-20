@@ -1,0 +1,63 @@
+INSTRUCCIONES PARA ETIQUETADO COLABORATIVO
+==========================================
+
+Este lote contiene 120 imagenes de alevines con etiquetas
+pre-generadas automaticamente (cajas verdes ya dibujadas).
+
+Tu tarea: revisar cada imagen y CORREGIR las etiquetas.
+
+PASOS (solo la primera vez):
+----------------------------
+1. Instalar Python 3.10 si no lo tenes:
+   https://www.python.org/downloads/
+   IMPORTANTE: marcar la casilla "Add Python to PATH" al instalar.
+
+2. Doble click en setup.bat
+   (instala labelImg en un venv local y aplica los parches necesarios)
+
+PASOS (cada vez que vayas a etiquetar):
+---------------------------------------
+3. Doble click en launch_labelimg.bat
+
+4. En LabelImg:
+   - Cambiar formato a YOLO: clickear el boton de la sidebar izquierda
+     hasta que diga "YOLO" (por defecto arranca en "PascalVOC")
+   - Activar Auto Save: menu View -> Auto Save mode
+
+5. Atajos esenciales:
+   W = nueva caja        |  D = siguiente imagen
+   Ctrl+S = guardar      |  A = imagen anterior
+   Del = borrar caja     |  Ctrl+D = duplicar caja
+   Rueda del mouse = scroll | Ctrl+rueda = zoom
+
+6. Para cada imagen:
+   - Borrar cajas falsas (zapatos, marca de bandeja, sombras del agua)
+   - Agregar alevines que no estan marcados (W para dibujar nueva caja)
+   - Ajustar cajas mal posicionadas (arrastrar las esquinas)
+   - Guardar antes de pasar a la siguiente (Auto Save lo hace solo)
+
+CRITERIO DE ETIQUETADO:
+-----------------------
+- Etiquetar cada alevin visible con mas del 50% del cuerpo en cuadro
+- NO etiquetar alevines totalmente ocluidos por otros
+- UNA caja por alevin (no por cabeza+cola por separado)
+- En cumulos densos, etiquetar solo los que se distinguen claramente
+- En las imagenes muy densas (con 100+ alevines amontonados) hacer lo mejor
+  posible pero NO obsesionarse - documentaremos como limitacion.
+
+DEVOLUCION:
+-----------
+Cuando termines (o al hacer pausa para sincronizar):
+- Comprimir TODA esta carpeta (excepto venv\ que pesa mucho) en un ZIP.
+- O mejor: comprimir solo los archivos .jpg y .txt al mismo nivel que esta
+  carpeta. No necesitas devolver venv\ ni _parches\
+- Enviarlo de vuelta por Drive/WeTransfer.
+- El responsable principal lo procesara con scripts/merge_collab.py
+
+NOTA TECNICA:
+-------------
+La carpeta venv\ son las dependencias de Python (~600 MB), NO tocar.
+La carpeta _parches\ tiene los archivos para arreglar bugs de la GUI.
+classes.txt define las clases (en este proyecto solo "alevin").
+
+Si tenes algun problema, contactar al responsable principal.

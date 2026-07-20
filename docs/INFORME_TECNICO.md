@@ -123,6 +123,21 @@ El error residual del mejor modelo se concentra en **una imagen** (`VID_..._fram
 
 La alta resolución mejoró este caso (85 → 101 detecciones) pero no lo resolvió del todo; es el objetivo natural del trabajo futuro (§8: atención para objetos pequeños, más datos densos).
 
+### 4.6 Prueba de generalización a NUEVA sesión (2 videos, otra cámara)
+Se grabaron **2 videos nuevos** (iPhone, 4K, ~18 min) en una sesión distinta: **otro recipiente** (bandeja translúcida sobre superficie metálica), **otra iluminación** y **otro día**. Es la primera prueba de generalización fuera de la sesión de entrenamiento. Se aplicó el modelo recomendado (sin reentrenar) sobre frames de muestra:
+
+| Video | Contenido | Resultado cualitativo |
+|---|---|---|
+| IMG_0177 | Larvas pequeñas, baja densidad (~20) | ✅ **Generaliza bien** — detecta las larvas pese al recipiente/fondo/cámara distintos |
+| IMG_0178 | Peces **más grandes/desarrollados, otra especie** | ⚠️ **Subdetecta** — apariencia fuera de la distribución de entrenamiento |
+
+**Tres conclusiones importantes:**
+1. **Generalización parcial confirmada:** cuando el objeto se parece al de entrenamiento (larvas), el modelo funciona en una sesión nueva → evidencia a favor de robustez a cambios de fondo/luz/cámara.
+2. **Límite de dominio:** peces visualmente distintos (otra especie/tamaño) requieren datos nuevos. Se decidió ampliar el sistema a un **contador de peces general** (una sola clase, múltiples tamaños/especies).
+3. **Falso positivo sistemático:** el modelo marca el **logo en relieve del recipiente** como pez. Se corrige añadiendo ejemplos negativos (imágenes del recipiente sin peces) al reentrenar.
+
+**Acción tomada:** se extrajeron 120 frames diversos (dedup pHash) de ambos videos y se pre-etiquetaron con el modelo como borrador, listos para corrección manual y reentrenamiento. Evidencia: [`docs/figuras/fig_generaliza_v177.jpg`](figuras/fig_generaliza_v177.jpg), [`docs/figuras/fig_generaliza_v178.jpg`](figuras/fig_generaliza_v178.jpg).
+
 ---
 
 ## 5. Evidencia (archivos generados)
