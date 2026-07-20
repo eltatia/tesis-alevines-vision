@@ -1,0 +1,6 @@
+modelo,precision,recall,mAP50,mAP50_95,conf,MAE,RMSE,MAPE,R2,acc_conteo,bias,pred_total,real_total,agg_err,agg_pct,weights
+YOLOv8n_113,0.7757,0.7701,0.8094,0.4356,0.4,19.09,35.73,9.2,0.7712,90.8,-11.45,2192,2318,126,5.44,runs/detect/alevines_v8n_114/weights/best.pt
+YOLOv11n_113,0.7868,0.7619,0.8009,0.4345,0.35,21.64,41.05,10.67,0.6979,89.33,-14.18,2162,2318,156,6.73,runs/detect/alevines_v11n_114/weights/best.pt
+YOLOv11s_113,0.7724,0.7992,0.8215,0.4604,0.4,23.45,42.32,11.15,0.679,88.85,-10.55,2202,2318,116,5.0,runs/detect/alevines_v11s_114/weights/best.pt
+YOLOv11n_hires_113,0.771,0.8032,0.8251,0.4733,0.3,21.27,34.42,9.59,0.7876,90.41,0.36,2322,2318,4,0.17,runs/detect/alevines_v11n_hires_113/weights/best.pt
+YOLOv8n_hires_113,0.7533,0.8106,0.8186,0.4652,0.35,23.82,41.83,11.25,0.6863,88.75,-5.09,2262,2318,56,2.42,runs/detect/alevines_v8n_hires_113/weights/best.pt

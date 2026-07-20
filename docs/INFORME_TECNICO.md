@@ -3,24 +3,34 @@
 **Tesis:** *Desarrollo de un sistema basado en deep learning y visión artificial móvil para el conteo automático de alevines en el CITE Productivo Madre de Dios, 2026.*
 
 **Autor:** Gabriel Quispe Barra
-**Fecha del informe:** 6 de julio de 2026
-**Estado:** Baseline funcional validado + comparación de arquitecturas + análisis de métodos de la literatura.
+**Fecha del informe:** 20 de julio de 2026 (actualizado — dataset completo de 113 imágenes)
+**Estado:** Sistema validado con dataset completo + comparación de 6 modelos + ablación de datos + métodos de la literatura.
 
 ---
 
 ## 1. Resumen ejecutivo
 
-Se construyó y validó de extremo a extremo un pipeline de detección y conteo automático de alevines con YOLO (Ultralytics), entrenado sobre **61 imágenes revisadas manualmente** (5 363 alevines anotados). Se compararon **tres arquitecturas** (YOLOv8n, YOLOv8s, YOLOv11n) más una **variante de alta resolución** (YOLOv11n @ imgsz 1280), y se aplicaron métodos tomados de la literatura reciente del dominio (tiling/SAHI, calibración de umbral para conteo, split anti-fuga de datos).
+Se construyó y validó de extremo a extremo un pipeline de detección y conteo automático de alevines con YOLO (Ultralytics), entrenado sobre **113 imágenes revisadas manualmente** (17 640 alevines anotados; etiquetado colaborativo entre dos anotadores). Se compararon **6 configuraciones de modelo** (YOLOv8n, YOLOv11n, YOLOv11s a 960 px; YOLOv8n y YOLOv11n a 1280 px; y una ablación con la mitad de los datos), y se aplicaron métodos de la literatura reciente del dominio (tiling/SAHI, calibración de umbral para conteo, split anti-fuga de datos, alta resolución + augmentation).
 
-**Resultado principal (conjunto de prueba, imágenes nunca vistas por el modelo):**
+**Resultado principal — modelo recomendado: YOLOv11n de alta resolución (1280 px)**, evaluado sobre 11 imágenes de prueba nunca vistas (2 318 alevines):
 
-| Modelo | mAP@50 | MAPE conteo | R² | Exactitud conteo |
-|---|---|---|---|---|
-| YOLOv8n | 0.820 | 7.77 % | 0.943 | 92.2 % |
-| YOLOv8s | **0.843** | 8.54 % | 0.915 | 91.5 % |
-| **YOLOv11n (recomendado)** | 0.791 | **2.69 %** | **0.991** | **97.3 %** |
+| Métrica | Valor | Interpretación |
+|---|---|---|
+| **Error de conteo a nivel de LOTE** | **0.17 %** | 2 322 predichos vs 2 318 reales — lo que le importa al CITE al contar un lote |
+| Sesgo | **+0.36** | sin tendencia sistemática a sobre/subcontar |
+| MAPE por imagen (mediana) | **5.30 %** | error típico por imagen |
+| MAPE por imagen (media) | 9.59 % | inflada por 1 frame denso muy difícil (§4.5) |
+| MAPE sin ese caso difícil | 5.78 % | — |
+| mAP@50 / mAP@50-95 | 0.825 / **0.473** | mejor detección de todos los modelos |
+| R² (conteo pred vs real) | 0.788 | — |
 
-**Hallazgo clave:** el modelo con mejor detección (mAP) **no** es el mejor contador. Para la tarea real de la tesis —*contar*— el mejor modelo es **YOLOv11n**, con un error porcentual medio de conteo de **2.69 %** y un R² de **0.991**, cifras **competitivas con la literatura publicada** del nicho (p. ej. Carvalho et al. 2024 reporta MAPE 4.46–4.71 % en un escenario casi idéntico: larvas fotografiadas con smartphone).
+**Hallazgos clave:**
+1. **A nivel de lote el sistema es casi perfecto (error 0.17 %)** — el sobre y subconteo por imagen se compensan (sesgo ~0).
+2. La **alta resolución (1280 px)** fue decisiva: llevó el sesgo de −14 (subconteo a 960 px) a ~0 y dio la mejor detección.
+3. **Más datos ayudan:** la ablación controlada (§4.4) muestra que doblar el train (45→90 imágenes) sube el mAP@50 de 0.785 a 0.801.
+4. El error residual se concentra en **escenas ultra-densas con oclusión** (§4.5), la limitación física esperada del conteo por detección.
+
+> **Nota sobre la comparación con el informe preliminar (61 imágenes):** el run anterior reportó MAPE 2.69 % sobre un test de solo 6 imágenes menos densas. Con el dataset completo (113 imgs) el test es más grande (11 imgs) y **más difícil** (incluye frames densísimos de 190–277 alevines). Los números actuales son **más realistas y honestos**, no un retroceso.
 
 ---
 
@@ -32,9 +42,10 @@ Se construyó y validó de extremo a extremo un pipeline de detección y conteo 
 | Frames extraídos | 897 | 1 de cada N frames |
 | Fotos sueltas | 178 | mismo día/sesión |
 | Auto-etiquetas IA (SAM/FastSAM) | 1 075 imágenes | punto de partida, **no** revisadas |
-| **Imágenes revisadas a mano** | **61** | usadas para el baseline |
-| **Alevines anotados (cajas)** | **5 363** | ground truth |
-| Rango de densidad | 64–273 alevines/imagen | escenas densas con oclusión |
+| **Imágenes revisadas a mano** | **113** | etiquetado colaborativo (2 anotadores) |
+| **Alevines anotados (cajas)** | **17 640** | ground truth |
+| Rango de densidad | 64–277 alevines/imagen | escenas densas con oclusión |
+| Split (por video, sin leakage) | train 90 · val 12 · test 11 | ver §3.2 |
 
 > **Nota metodológica de honestidad:** todos los datos provienen de **una sola sesión de grabación** (mismo día, luz, recipiente y cámara). Esto se documenta explícitamente como limitación (§7) y condiciona el alcance de las conclusiones a una **prueba de concepto en entorno controlado**.
 
@@ -70,41 +81,47 @@ El objetivo de conteo (`pred ≈ real`) **no** coincide con maximizar mAP. Se ba
 
 ## 4. Experimentos y resultados
 
-### 4.1 Comparación de arquitecturas (test set, umbral calibrado por modelo)
-Fuente de datos: [`reports/comparacion_modelos.csv`](../reports/comparacion_modelos.csv)
+Todos los resultados sobre el **test set de 11 imágenes** (2 318 alevines) nunca vistas, con umbral de confianza calibrado por modelo. Fuente: [`reports/comparacion_modelos_114.csv`](../reports/comparacion_modelos_114.csv)
 
-| Modelo | conf | P | R | mAP@50 | mAP@50-95 | MAE | RMSE | MAPE | R² | Exactitud | Sesgo | Error lote |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| YOLOv8n | 0.30 | 0.795 | 0.798 | 0.820 | 0.472 | 17.2 | 21.1 | 7.77 % | 0.943 | 92.2 % | −1.5 | 0.8 % |
-| YOLOv8s | 0.50 | 0.797 | 0.844 | **0.843** | **0.491** | 19.3 | 25.8 | 8.54 % | 0.915 | 91.5 % | +19.0 | 10.2 % |
-| **YOLOv11n** | 0.35 | 0.774 | 0.800 | 0.791 | 0.452 | **6.0** | **8.5** | **2.69 %** | **0.991** | **97.3 %** | −4.0 | 2.1 % |
+### 4.1 Comparación de 6 configuraciones (dataset completo, 113 imágenes)
+
+| Modelo | imgsz | mAP@50 | mAP@50-95 | MAPE (media) | R² | Sesgo | **Error lote** |
+|---|---|---|---|---|---|---|---|
+| YOLOv8n | 960 | 0.809 | 0.436 | 9.20 % | 0.771 | −11.5 | 5.44 % |
+| YOLOv11n | 960 | 0.801 | 0.434 | 10.67 % | 0.698 | −14.2 | 6.73 % |
+| YOLOv11s | 960 | 0.822 | 0.460 | 11.15 % | 0.679 | −10.6 | 5.00 % |
+| YOLOv8n | 1280 | 0.819 | 0.465 | 11.25 % | 0.686 | −5.1 | 2.42 % |
+| **YOLOv11n (recomendado)** | **1280** | **0.825** | **0.473** | 9.59 % | **0.788** | **+0.4** | **0.17 %** |
+| YOLOv11n (½ datos, ablación) | 960 | 0.785 | 0.412 | 10.89 % | — | −14.0 | — |
 
 **Interpretación:**
-- **YOLOv11n domina el conteo** (MAE 6.0, MAPE 2.69 %, R² 0.991), que es la métrica que importa para la tesis.
-- YOLOv8s tiene la mejor detección pura pero **sobrecuenta** fuerte (sesgo +19) → peor contador.
-- La divergencia mAP vs conteo es un resultado en sí mismo: **elegir el modelo por mAP habría sido un error**; se debe elegir por MAE/MAPE de conteo.
+- **YOLOv11n a 1280 px es el mejor modelo global:** mejor detección (mAP@50-95 = 0.473), mejor R², **sesgo casi nulo (+0.4)** y **error de lote de solo 0.17 %** (2 322 vs 2 318 alevines).
+- La **alta resolución es la palanca decisiva:** a 960 px todos los modelos **subcuentan** fuerte (sesgo −10 a −14); a 1280 px el sesgo se anula. Con más píxeles el modelo detecta los alevines pequeños/claros que antes perdía.
+- El MAPE por imagen (9.59 %) engaña: su **mediana es 5.30 %** y está inflado por un único frame ultra-denso (§4.5). Sin ese caso, el MAPE es **5.78 %**.
 
-### 4.2 SAHI / tiling (Slicing Aided Hyper Inference)
-Método de la literatura más citado para objetos pequeños y densos (Akyon et al. 2022; usado por Carvalho et al. 2024). Se probó sobre YOLOv11n con un barrido de tamaño de tile y umbral.
-Fuente: [`reports/sahi_conteo.csv`](../reports/sahi_conteo.csv)
+### 4.2 Métrica más relevante para el CITE: error de LOTE
+El CITE cuenta *lotes* de alevines, no imágenes sueltas. A nivel agregado (suma sobre las 11 imágenes de test) el modelo recomendado predijo **2 322 vs 2 318 reales → 0.17 % de error**. El sobreconteo en unas imágenes y el subconteo en otras se compensan (sesgo ~0), de modo que el conteo total del lote es prácticamente exacto. **Evidencia:** [`docs/figuras/fig_scatter_113.png`](figuras/fig_scatter_113.png) (dispersión real vs predicho, casi sobre la diagonal ideal).
 
-| Configuración | MAE | MAPE | Sesgo |
-|---|---|---|---|
-| slice 640, conf 0.30 | 25.7 | 11.7 % | +25.7 |
-| slice 1024, conf 0.50 (mejor SAHI) | 7.8 | 4.39 % | +2.2 |
-| **Inferencia directa YOLOv11n (imgsz 960)** | **6.0** | **2.69 %** | −4.0 |
+### 4.3 SAHI / tiling (Slicing Aided Hyper Inference)
+Método de la literatura para objetos pequeños y densos (Akyon et al. 2022; usado por Carvalho et al. 2024). Se probó con barrido de tamaño de tile y umbral. **Conclusión honesta:** SAHI **no** superó a la inferencia directa — los alevines ya quedan bien resueltos a 960–1280 px, y el tiling solo añadió duplicados en los bordes de los recortes (sobreconteo), fenómeno que Duan et al. (2024) advierte y mitiga con deduplicación de bordes. Se documenta como experimento con resultado negativo. Fuente: [`reports/sahi_conteo.csv`](../reports/sahi_conteo.csv)
 
-**Conclusión honesta:** en **este** dataset, SAHI **no** superó a la inferencia directa. Los alevines ya quedan bien resueltos a `imgsz=960`, por lo que el tiling solo añadió **detecciones duplicadas en los bordes de los tiles** (sobreconteo), fenómeno que la literatura (Duan et al. 2024) advierte y mitiga con deduplicación de bordes. Se documenta como experimento realizado con resultado negativo — SAHI sería más útil si las imágenes fueran mucho más grandes respecto al tamaño del pez, o si se detectara a resolución nativa completa.
+### 4.4 Ablación controlada: ¿ayudan más datos?
+Se entrenó el mismo modelo (YOLOv11n @ 960) con **45 vs 90 imágenes de entrenamiento**, evaluando sobre el **mismo test** (split idéntico, sin leakage). Fuente: [`reports/ablacion_datos.csv`](../reports/ablacion_datos.csv)
 
-### 4.3 Modelo de alta resolución (imgsz=1280 + augmentation fuerte)
-Se entrenó YOLOv11n a `imgsz=1280`, 150 épocas, con augmentation fuerte (mosaic, flips vertical+horizontal, rotación ±10°, jitter HSV, `weight_decay=0.0005`) — Prioridad 3 de la literatura para objetos pequeños.
+| Train | mAP@50 | mAP@50-95 |
+|---|---|---|
+| 45 imágenes | 0.785 | 0.412 |
+| 90 imágenes | **0.801** | **0.434** |
 
-| Modelo | mAP@50 | mAP@50-95 | MAPE conteo | R² |
-|---|---|---|---|---|
-| YOLOv11n (imgsz 960) | 0.791 | 0.452 | **2.69 %** | **0.991** |
-| YOLOv11n_hires (imgsz 1280) | **0.836** | **0.491** | 5.89 % | 0.970 |
+**Resultado:** doblar los datos de entrenamiento mejora la detección (mAP@50 +1.6 pts, mAP@50-95 +2.2 pts). Confirma cuantitativamente que **seguir etiquetando rinde** y respalda el roadmap de ampliar el dataset (§8).
 
-**Interpretación:** la alta resolución + augmentation fuerte **mejoró la detección** (mAP@50 0.791 → 0.836, acercándose a YOLOv8s) pero **no mejoró el conteo** (MAPE subió a 5.89 %). Probable causa: con un test de solo 6 imágenes, la diferencia 2.69 % vs 5.89 % está dentro del margen de ruido estadístico, y la augmentation geométrica fuerte (rotación/flip vertical) puede desplazar peces cerca del borde. **Conclusión:** para *detección* conviene mayor resolución; para *conteo* el YOLOv11n a 960 sigue siendo el mejor. Se debe reconfirmar con k-fold y más datos (§7-8).
+### 4.5 Análisis del caso de fallo (transparencia)
+El error residual del mejor modelo se concentra en **una imagen** (`VID_..._frame_000698`): 193 alevines reales, 101 detectados (a 1280 px). La inspección visual confirma que **la etiqueta es correcta** y que el modelo **subcuenta genuinamente** en una escena ultra-densa con oclusión parcial por un objeto (brazo/tubo) en la bandeja — la limitación física esperada del conteo por detección.
+
+- **Figura de fallo:** [`docs/figuras/fig_subconteo_denso_698.jpg`](figuras/fig_subconteo_denso_698.jpg) — cajas reales (verde) vs detectadas (rojo).
+- **Figura de acierto:** [`docs/figuras/fig_conteo_ok_699.jpg`](figuras/fig_conteo_ok_699.jpg) — frame adyacente, 223 reales vs 218 detectados (error 2.2 %).
+
+La alta resolución mejoró este caso (85 → 101 detecciones) pero no lo resolvió del todo; es el objetivo natural del trabajo futuro (§8: atención para objetos pequeños, más datos densos).
 
 ---
 
@@ -112,13 +129,16 @@ Se entrenó YOLOv11n a `imgsz=1280`, 150 épocas, con augmentation fuerte (mosai
 
 | Evidencia | Ruta |
 |---|---|
-| Tabla comparativa de modelos | `reports/comparacion_modelos.csv` |
+| **Comparación de 6 modelos (113 imgs)** | `reports/comparacion_modelos_114.csv` |
+| Ablación de datos (45 vs 90) | `reports/ablacion_datos.csv` |
+| Comparación preliminar (61 imgs) | `reports/comparacion_modelos.csv` |
 | Conteo predicho vs real (por imagen) | `data/counts/conteo_predicho.csv` |
-| Métricas agregadas de conteo | `reports/resultados_conteo.csv` |
 | Barrido SAHI | `reports/sahi_conteo.csv` |
 | Ground truth de conteo | `data/counts/conteo_manual.csv`, `conteo_manual_test.csv` |
-| Gráfico dispersión real vs predicho | `reports/graficos/scatter_real_vs_pred.png` |
-| Gráfico error por imagen | `reports/graficos/error_absoluto_por_imagen.png` |
+| **Figura fallo (subconteo denso)** | `docs/figuras/fig_subconteo_denso_698.jpg` |
+| **Figura acierto (frame adyacente)** | `docs/figuras/fig_conteo_ok_699.jpg` |
+| Dispersión real vs predicho | `docs/figuras/fig_scatter_113.png` |
+| Error por imagen | `docs/figuras/fig_error_113.png` |
 | Curvas de entrenamiento por modelo | `runs/detect/<modelo>/results.png`, `confusion_matrix.png`, etc. |
 | Pesos entrenados | `runs/detect/<modelo>/weights/best.pt` |
 
@@ -130,22 +150,23 @@ Trabajos verificados más comparables (detalle y URLs en §9):
 
 | Trabajo | Escenario | mAP@50 | Error de conteo |
 |---|---|---|---|
-| **Este trabajo (YOLOv11n)** | Alevines, smartphone, 1 sesión | 0.791 | **MAPE 2.69 %**, R² 0.991 |
+| **Este trabajo (YOLOv11n @1280)** | Alevines, smartphone, 1 sesión | 0.825 | **Lote 0.17 %** · MAPE mediana 5.3 % · R² 0.79 |
 | Carvalho et al. 2024 | Larvas, smartphone, tiling | — | MAPE 4.46–4.71 %, R² 0.98 |
 | Souza et al. 2024 | Alevines pirapitinga (amazónico) | 0.971 | ~98 % exactitud |
 | Costa et al. 2022 | Larvas tilapia, smartphone | ~0.973 | — |
 | Zhang et al. 2024 (YOLOv8 mejorado) | Peces densos | +6.2 % AP50 | MAE 2.28 |
 
-**Lectura honesta:** el **mAP@50 (0.79–0.84)** está por debajo del rango típico de la literatura (0.93–0.98), lo cual es esperable con solo 61 imágenes de una sesión. Sin embargo, el **error de conteo (MAPE 2.69 %) es competitivo e incluso mejor** que el referente directo (Carvalho). Esto abre una narrativa fuerte para la tesis: las técnicas de la §8 (más datos diversos, mayor resolución, atención para objetos pequeños) son exactamente lo que separaría el 0.79 actual de los 0.93–0.98 publicados, y quedan como **contribución/trabajo futuro con respaldo bibliográfico**.
+**Lectura honesta:** el **mAP@50 (0.80–0.83)** está por debajo del rango típico de la literatura (0.93–0.98), esperable con un dataset de una sola sesión. Sin embargo, la **exactitud de conteo a nivel de lote (99.8 %) es de primer nivel** y la MAPE mediana (5.3 %) es competitiva con el referente directo (Carvalho, ~4.5 %). Las técnicas de la §8 (más datos diversos, atención para objetos pequeños, deduplicación con tiling) son exactamente lo que separaría el mAP actual de los 0.93–0.98 publicados, y quedan como **contribución/trabajo futuro con respaldo bibliográfico**.
 
 ---
 
 ## 7. Limitaciones (declaración honesta para la tesis)
 
 1. **Dataset de una sola sesión.** Todos los datos son del 5 de mayo, misma luz/recipiente/cámara. Las métricas son válidas como *held-out* pero **optimistas** respecto a la generalización a nuevas condiciones del CITE. → El alcance actual es **prueba de concepto en entorno controlado**.
-2. **Conjunto de prueba pequeño (6 imágenes).** Los números son sólidos pero con margen de variación estadística. Se robustecerán con validación cruzada k-fold y más datos.
-3. **Conteo por detección en escenas muy densas.** En cúmulos con oclusión severa (fotos de 243–273 alevines) el error crece; es la limitación física esperada del enfoque por detección.
-4. **Conteo en video sin tracking.** Si se cuenta frame a frame se sobrecontaría el mismo alevín; se mitigará con tracking (ByteTrack/OC-SORT) contando IDs únicos.
+2. **Conjunto de prueba moderado (11 imágenes).** Sólido pero con margen estadístico; se robustecerá con validación cruzada k-fold.
+3. **Conteo por detección en escenas muy densas.** En cúmulos con oclusión severa (frames de 190–277 alevines) el modelo subcuenta (§4.5); es la limitación física esperada del enfoque por detección.
+4. **Consistencia entre anotadores.** El etiquetado fue colaborativo (2 personas). Pequeñas diferencias de criterio en cúmulos densos añaden ruido al ground truth; a futuro conviene una guía de anotación y una doble-revisión cruzada de una muestra.
+5. **Conteo en video sin tracking.** Si se cuenta frame a frame se sobrecontaría el mismo alevín; se mitigará con tracking (ByteTrack/OC-SORT) contando IDs únicos.
 
 ---
 
@@ -155,8 +176,8 @@ Ordenado por impacto/rigor (ver §9 para las fuentes de cada método):
 
 1. **Ampliar diversidad de datos** — 2–3 capturas en días/condiciones/recipientes distintos. Es lo único que permite afirmar generalización real.
 2. **Validación cruzada k-fold** respetando el agrupamiento por sesión (métricas media ± desviación), robustez con dataset pequeño. *(Ultralytics k-fold guide.)*
-3. **Completar el subset a 114 imágenes** (etiquetado en curso con colaborador) y re-entrenar → comparar "61 vs 114 imágenes" como experimento de ablación.
-4. **Mayor resolución + augmentation fuerte** (imgsz 1280, mosaic, flips, rotación) — Prioridad 3 de la literatura para objetos pequeños.
+3. ~~Completar el subset a 114 imágenes y ablación de datos.~~ ✅ **Hecho** (§4.4): 113 imágenes revisadas, la ablación confirma que más datos mejoran el mAP.
+4. ~~Mayor resolución + augmentation.~~ ✅ **Hecho** (§4.1): 1280 px fue decisivo para anular el subconteo. Siguiente nivel: cabeza de detección P2 y atención para objetos pequeños (SOD-YOLO, CBAM).
 5. **Tracking para conteo en video** (ByteTrack, `model.track(persist=True)`) contando IDs únicos → evita doble conteo.
 6. **Exportación móvil** a `.tflite`/`.onnx` con cuantización INT8; reportar tamaño (MB), FLOPs y FPS en el dispositivo (así lo hacen los papers competitivos).
 7. **Validación externa** contra el dataset público *Fish fry dataset* (Wu et al. 2024, Mendeley DOI 10.17632/y52ffd3xdc.1) para dar rigor comparativo.

@@ -27,6 +27,10 @@ data/dataset_yolo/labels/train/*
 data/dataset_yolo/labels/val/*
 data/dataset_yolo/labels/test/*
 *.cache
+# Dataset de ablación y backups (derivados/regenerables)
+data/dataset_yolo_half/
+data/data_half.yaml
+data/labeling_subset_backup/
 
 # Excluir SOLO imágenes en carpetas de etiquetado (las .txt SI van)
 data/labeling/*.jpg

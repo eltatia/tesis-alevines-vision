@@ -1,0 +1,2 @@
+modelo,precision,recall,mAP50,mAP50_95,conf,MAE,RMSE,MAPE,R2,acc_conteo,bias,pred_total,real_total,agg_err,agg_pct,weights
+YOLOv11n_45imgs,0.7805,0.7321,0.7848,0.4124,0.4,22.36,45.55,10.89,0.628,89.11,-14.0,2164,2318,154,6.64,runs/detect/alevines_v11n_half/weights/best.pt
