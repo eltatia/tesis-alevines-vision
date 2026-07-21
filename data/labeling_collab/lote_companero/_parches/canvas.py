@@ -115,6 +115,15 @@ class Canvas(QWidget):
             self.parent().window().label_coordinates.setText(
                 'X: %d; Y: %d' % (pos.x(), pos.y()))
 
+        # Paneo con BOTON CENTRAL mantenido
+        if ev.buttons() & Qt.MiddleButton:
+            delta_x = pos.x() - self.pan_initial_pos.x()
+            delta_y = pos.y() - self.pan_initial_pos.y()
+            self.scrollRequest.emit(delta_x, Qt.Horizontal)
+            self.scrollRequest.emit(delta_y, Qt.Vertical)
+            self.update()
+            return
+
         # Polygon drawing.
         if self.drawing():
             self.override_cursor(CURSOR_DRAW)
@@ -255,6 +264,12 @@ class Canvas(QWidget):
     def mousePressEvent(self, ev):
         pos = self.transform_pos(ev.pos())
 
+        # Paneo con BOTON CENTRAL (rueda presionada): mover la imagen
+        if ev.button() == Qt.MiddleButton:
+            self.pan_initial_pos = pos
+            QApplication.setOverrideCursor(QCursor(Qt.ClosedHandCursor))
+            return
+
         if ev.button() == Qt.LeftButton:
             if self.drawing():
                 self.handle_drawing(pos)
@@ -273,6 +288,11 @@ class Canvas(QWidget):
         self.update()
 
     def mouseReleaseEvent(self, ev):
+        # Fin del paneo con boton central
+        if ev.button() == Qt.MiddleButton:
+            QApplication.restoreOverrideCursor()
+            return
+
         if ev.button() == Qt.RightButton:
             menu = self.menus[bool(self.selected_shape_copy)]
             self.restore_cursor()
@@ -605,7 +625,7 @@ class Canvas(QWidget):
             v_delta = delta.y()
 
         mods = ev.modifiers()
-        if Qt.ControlModifier == int(mods) and v_delta:
+        if (mods & Qt.ControlModifier) and v_delta:
             self.zoomRequest.emit(v_delta)
         else:
             v_delta and self.scrollRequest.emit(v_delta, Qt.Vertical)
