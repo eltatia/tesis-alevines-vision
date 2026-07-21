@@ -225,16 +225,16 @@ class MainWindow(QMainWindow, WindowMixin):
         copy_prev_bounding = action(get_str('copyPrevBounding'), self.copy_previous_bounding_boxes, 'Ctrl+v', 'copy', get_str('copyPrevBounding'))
 
         open_next_image = action(get_str('nextImg'), self.open_next_image,
-                                 'd', 'next', get_str('nextImgDetail'))
+                                 ['d', 'Ctrl+D'], 'next', get_str('nextImgDetail'))
 
         open_prev_image = action(get_str('prevImg'), self.open_prev_image,
-                                 'a', 'prev', get_str('prevImgDetail'))
+                                 ['a', 'Ctrl+A'], 'prev', get_str('prevImgDetail'))
 
         verify = action(get_str('verifyImg'), self.verify_image,
                         'space', 'verify', get_str('verifyImgDetail'))
 
         save = action(get_str('save'), self.save_file,
-                      'Ctrl+S', 'save', get_str('saveDetail'), enabled=False)
+                      ['Ctrl+S', 'Ctrl+Z'], 'save', get_str('saveDetail'), enabled=False)
 
         def get_format_meta(format):
             """
@@ -274,7 +274,7 @@ class MainWindow(QMainWindow, WindowMixin):
         delete = action(get_str('delBox'), self.delete_selected_shape,
                         'Delete', 'delete', get_str('delBoxDetail'), enabled=False)
         copy = action(get_str('dupBox'), self.copy_selected_shape,
-                      'Ctrl+D', 'copy', get_str('dupBoxDetail'),
+                      'Ctrl+Shift+C', 'copy', get_str('dupBoxDetail'),
                       enabled=False)
 
         advanced_mode = action(get_str('advancedMode'), self.toggle_advanced_mode,
@@ -285,7 +285,7 @@ class MainWindow(QMainWindow, WindowMixin):
                           'Ctrl+H', 'hide', get_str('hideAllBoxDetail'),
                           enabled=False)
         show_all = action(get_str('showAllBox'), partial(self.toggle_polygons, True),
-                          'Ctrl+A', 'hide', get_str('showAllBoxDetail'),
+                          'Ctrl+Shift+H', 'hide', get_str('showAllBoxDetail'),
                           enabled=False)
 
         help_default = action(get_str('tutorialDefault'), self.show_default_tutorial_dialog, None, 'help', get_str('tutorialDetail'))

@@ -37,6 +37,48 @@ def fix_labelimg_py(text: str) -> tuple[str, bool]:
     return text, False
 
 
+# ---------- parche 4: atajos de teclado a medida ----------
+# Se AÑADEN Ctrl+Z (guardar) y Ctrl+A / Ctrl+D (retroceder / avanzar) sin
+# quitar los originales (Ctrl+S, a, d). Como Ctrl+A y Ctrl+D ya estaban
+# ocupados, esas funciones se reubican:
+#   duplicar caja      Ctrl+D  -> Ctrl+Shift+D
+#   mostrar todas      Ctrl+A  -> Ctrl+Shift+H  (hace pareja con Ctrl+H = ocultar)
+SHORTCUTS = [
+    # (texto original, texto nuevo, descripción)
+    ("""                                 'd', 'next', get_str('nextImgDetail'))""",
+     """                                 ['d', 'Ctrl+D'], 'next', get_str('nextImgDetail'))""",
+     "avanzar imagen: d + Ctrl+D"),
+    ("""                                 'a', 'prev', get_str('prevImgDetail'))""",
+     """                                 ['a', 'Ctrl+A'], 'prev', get_str('prevImgDetail'))""",
+     "retroceder imagen: a + Ctrl+A"),
+    ("""                      'Ctrl+S', 'save', get_str('saveDetail'), enabled=False)""",
+     """                      ['Ctrl+S', 'Ctrl+Z'], 'save', get_str('saveDetail'), enabled=False)""",
+     "guardar: Ctrl+S + Ctrl+Z"),
+    # OJO: Ctrl+Shift+D ya lo usa "eliminar imagen" (destructivo), asi que
+    # duplicar caja va a Ctrl+Shift+C.
+    ("""                      'Ctrl+D', 'copy', get_str('dupBoxDetail'),""",
+     """                      'Ctrl+Shift+C', 'copy', get_str('dupBoxDetail'),""",
+     "duplicar caja -> Ctrl+Shift+C"),
+    # Correccion por si una version previa dejo Ctrl+Shift+D (colision con
+    # eliminar imagen).
+    ("""                      'Ctrl+Shift+D', 'copy', get_str('dupBoxDetail'),""",
+     """                      'Ctrl+Shift+C', 'copy', get_str('dupBoxDetail'),""",
+     "corregida colision duplicar/eliminar -> Ctrl+Shift+C"),
+    ("""                          'Ctrl+A', 'hide', get_str('showAllBoxDetail'),""",
+     """                          'Ctrl+Shift+H', 'hide', get_str('showAllBoxDetail'),""",
+     "mostrar todas -> Ctrl+Shift+H"),
+]
+
+
+def fix_shortcuts(text: str) -> tuple[str, list[str]]:
+    done = []
+    for old, new, desc in SHORTCUTS:
+        if old in text:
+            text = text.replace(old, new, 1)
+            done.append(desc)
+    return text, done
+
+
 # ---------- parche 2 y 3: canvas ----------
 ZOOM_OLD = "        if Qt.ControlModifier == int(mods) and v_delta:"
 ZOOM_NEW = "        if (mods & Qt.ControlModifier) and v_delta:"
@@ -108,9 +150,14 @@ def patch_file(path: Path, kind: str) -> str:
     text = path.read_text(encoding="utf-8")
     if kind == "labelimg":
         new, changed = fix_labelimg_py(text)
-        if changed:
+        new, sc_done = fix_shortcuts(new)
+        if changed or sc_done:
             path.write_text(new, encoding="utf-8")
-            return f"  [OK] {path.name}: quitado import distutils"
+            partes = []
+            if changed:
+                partes.append("quitado import distutils")
+            partes.extend(sc_done)
+            return f"  [OK] {path.name}: {'; '.join(partes)}"
         return f"  [--] {path.name}: ya estaba bien"
     else:
         new, done = fix_canvas_py(text)
