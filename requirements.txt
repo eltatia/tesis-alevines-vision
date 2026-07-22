@@ -50,3 +50,5 @@ ipykernel==6.29.5
 # - Para exportar a TFLite (Fase 14) instalar también:
 #     pip install tensorflow==2.17.0
 # ============================================================
+lapx
+sahi

@@ -1,0 +1,3 @@
+video,tracker,frames,IDs_unicos,det_mediana_frame,det_media_frame,det_max_frame,frag_ratio,fps
+IMG_0177,bytetrack.yaml,300,65,27.0,27.5,32,2.41,10.6
+IMG_0177,trackers/botsort_static.yaml,300,52,27.5,27.6,32,1.89,10.9

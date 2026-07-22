@@ -126,3 +126,6 @@ data/labeling_collab/lote_nuevos_companero/_borrador_original/
 data/labeling_collab/lote_nuevos_companero/RESUMEN.md
 data/labeling_collab/lote_nuevos_companero/resumen.csv
 data/labeling_collab/lote_nuevos_companero/_to_delete/
+
+# Dataset combinado (derivado, regenerable)
+data/dataset_full/

@@ -249,3 +249,44 @@ venv/Scripts/python.exe scripts/evaluate_counting.py \
 ```
 
 Entorno: Windows 11, Python 3.10, PyTorch 2.11 + CUDA 12.8, Ultralytics 8.3.40, GPU RTX 5070 Ti.
+
+---
+
+## 11. Ampliación (2026-07-22): contador general (233 imgs) + tracking de video
+
+### 11.1 Contador general — 2 sesiones, 233 imágenes
+Se sumaron **2 videos nuevos** (iPhone 4K, otra sesión) a los datos de mayo. Etiquetado colaborativo (agente IA + revisión humana de 2 anotadores). Dataset combinado: **233 imágenes revisadas, 20 701 cajas**, split **por fuente** (sin leakage), test = 23 imgs cubriendo las 5 fuentes.
+
+Comparación de 3 modelos @1280 (test 23 imgs, 2 618 alevines). Fuente: [`reports/comparacion_general.csv`](../reports/comparacion_general.csv)
+
+| Modelo | mAP@50 | mAP@50-95 | MAPE | R² | Error lote |
+|---|---|---|---|---|---|
+| **YOLOv11n (recomendado)** | 0.825 | 0.483 | 12.5 % | **0.936** | **2.6 %** |
+| YOLOv11s | **0.833** | **0.498** | 14.3 % | 0.892 | 6.9 % |
+| YOLOv8n | 0.817 | 0.478 | 12.1 % | 0.907 | 7.0 % |
+
+**Dos logros verificados** (antes el modelo solo-mayo fallaba en ambos):
+1. **Falso positivo del logo eliminado:** el modelo ya no marca el logo en relieve del recipiente como pez (evidencia: [`docs/figuras/fig_modelo_general_v178.jpg`](figuras/fig_modelo_general_v178.jpg)).
+2. **Aprende los peces grandes (otra especie, v178):** de 13 → 19 detecciones en el frame de prueba.
+
+**Generalización por fuente (MAPE de conteo en test):** VID_154533 (mayo) 0.8 % · foto_mayo 7.6 % · **v177 (larvas nuevas) 6.9 %** · v178 (peces grandes densos) 21.6 % · VID_155231 (mayo denso) 15.4 %. El sistema funciona ahora en las **5 condiciones** (2 cámaras, 2 sesiones), no solo en la sesión original — evidencia real de generalización.
+
+### 11.2 Tracking para conteo en video: ByteTrack vs BoT-SORT
+Para contar en video sin duplicar el mismo pez entre frames se cuentan **IDs únicos** de un tracker. Se compararon 3 configuraciones sobre los 2 videos. Métrica clave = **fragmentación** (`IDs_únicos / detecciones_medianas_por_frame`; ideal = 1; alto = el tracker pierde peces y les da ID nuevo → sobrecuenta). Fuente: [`reports/trackers_comparacion.csv`](../reports/trackers_comparacion.csv)
+
+| Tracker | Frag. v177 | Frag. v178 | FPS |
+|---|---|---|---|
+| ByteTrack (`bytetrack.yaml`) | 9.0 | 13.9 | 10.5 |
+| BoT-SORT (`botsort.yaml`, GMC on) | 4.2 | 7.4 | 5.8 |
+| **BoT-SORT estático (GMC off)** | 4.3 | **7.1** | **10.9** |
+
+**Hallazgos (el dato mandó sobre la teoría):**
+1. **BoT-SORT >> ByteTrack** en estabilidad de IDs (≈2× menos fragmentación). Contradice la intuición inicial: el filtro de Kalman más preciso de BoT-SORT (estima ancho/alto) ayuda mucho con objetos pequeños. *Medir, no solo teorizar.*
+2. **La compensación de movimiento de cámara (GMC) es inútil con trípode:** BoT-SORT con GMC on vs off da la **misma calidad** pero GMC-off es **~2× más rápido** (10.9 vs 5.8 FPS). → Configuración óptima: `gmc_method: none` ([`trackers/botsort_static.yaml`](../trackers/botsort_static.yaml)).
+3. **El framerate importa mucho:** a frame completo (sin saltar cuadros) la fragmentación cae de 4.3 → **1.89** (BoT-SORT estático, v177) — a 120 fps los peces casi no se mueven entre frames y el tracking es mucho más estable. Fuente: [`reports/trackers_stride1.csv`](../reports/trackers_stride1.csv)
+
+**Recomendación:** **BoT-SORT con `gmc_method: none`, a frame completo**, para el conteo por tracking.
+
+**Matiz honesto:** aún el mejor tracker sobrecuenta algo (frag ≈ 1.9). Para una **bandeja estática**, contar por frame (mediana de detecciones/frame, que es estable: ~28 en v177, ~16 en v178) es más fiable que acumular IDs. El tracking rinde de verdad en el escenario de **peces pasando por un punto/canal** (conteo de flujo), que queda como trabajo futuro.
+
+**Referencias tracking:** ByteTrack (arXiv:2110.06864), BoT-SORT (arXiv:2206.14651), Ultralytics track docs.
