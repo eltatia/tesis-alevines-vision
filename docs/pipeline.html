@@ -1,0 +1,223 @@
+<title>Pipeline — Conteo automático de alevines</title>
+<style>
+  :root{
+    --paper:#eef3f4; --card:#ffffff; --ink:#0f2323; --ink-soft:#40595a; --ink-faint:#6b8384;
+    --line:#cddbdc; --teal:#12726b; --teal-deep:#0d5a54; --teal-ink:#ffffff;
+    --step:#e4edee; --step-ink:#3a5354;
+    --blue:#e0eef4; --blue-line:#9cc3d6;
+    --amber:#f6ecd6; --amber-line:#d8b878;
+    --pink:#f6e2e6; --pink-line:#dca6b1;
+    --green:#dcefe0; --green-line:#7fbd93; --green-ink:#1c6b3b;
+    --accent:#12726b;
+    --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --mono: "Cascadia Code", Consolas, ui-monospace, monospace;
+    --shadow: 0 1px 2px rgba(15,35,35,.06), 0 8px 24px rgba(15,35,35,.07);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0a1516; --card:#0f1f20; --ink:#e6f0f0; --ink-soft:#a7bcbc; --ink-faint:#7b9394;
+      --line:#22383a; --teal:#1c9c92; --teal-deep:#157a72; --teal-ink:#03110f;
+      --step:#16292b; --step-ink:#bcd0d0;
+      --blue:#132b34; --blue-line:#2e5769;
+      --amber:#2e2612; --amber-line:#6b552a;
+      --pink:#2e1a20; --pink-line:#6b414c;
+      --green:#12291b; --green-line:#2f6b45; --green-ink:#5fce8c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#eef3f4; --card:#fff; --ink:#0f2323; --ink-soft:#40595a; --ink-faint:#6b8384; --line:#cddbdc;
+    --teal:#12726b; --teal-deep:#0d5a54; --teal-ink:#fff; --step:#e4edee; --step-ink:#3a5354;
+    --blue:#e0eef4; --blue-line:#9cc3d6; --amber:#f6ecd6; --amber-line:#d8b878;
+    --pink:#f6e2e6; --pink-line:#dca6b1; --green:#dcefe0; --green-line:#7fbd93; --green-ink:#1c6b3b;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0a1516; --card:#0f1f20; --ink:#e6f0f0; --ink-soft:#a7bcbc; --ink-faint:#7b9394; --line:#22383a;
+    --teal:#1c9c92; --teal-deep:#157a72; --teal-ink:#03110f; --step:#16292b; --step-ink:#bcd0d0;
+    --blue:#132b34; --blue-line:#2e5769; --amber:#2e2612; --amber-line:#6b552a;
+    --pink:#2e1a20; --pink-line:#6b414c; --green:#12291b; --green-line:#2f6b45; --green-ink:#5fce8c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 70px;}
+
+  .topbar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--paper) 85%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .topbar .in{max-width:1080px;margin:0 auto;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .topbar b{color:var(--teal);}
+  .brand{font-size:13px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;}
+  .toggle{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:var(--font);}
+  .toggle:hover{color:var(--ink);border-color:var(--teal);}
+  .toggle:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+
+  header.hero{padding:40px 0 20px;text-align:center;}
+  header.hero .eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);font-weight:700;margin:0 0 12px;}
+  header.hero h1{font-size:clamp(24px,4vw,36px);margin:0 auto 12px;max-width:760px;text-wrap:balance;letter-spacing:-.01em;}
+  header.hero p{color:var(--ink-soft);max-width:620px;margin:0 auto;font-size:15.5px;}
+
+  /* flujo */
+  .flow{display:flex;flex-direction:column;align-items:stretch;gap:0;}
+  .arrow{align-self:center;color:var(--teal);font-size:26px;line-height:1;margin:10px 0;user-select:none;}
+
+  .phase{background:var(--card);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;}
+  .phead{display:flex;align-items:center;gap:14px;background:var(--teal);color:var(--teal-ink);padding:12px 20px;}
+  .phead .pnum{font-family:var(--mono);font-weight:700;font-size:18px;background:color-mix(in srgb,#000 16%,var(--teal));width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;}
+  .phead .picon{font-size:20px;flex:none;}
+  .phead h2{margin:0;font-size:17px;font-weight:700;letter-spacing:.01em;}
+  .phead .tag{margin-left:auto;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.85;font-family:var(--mono);}
+
+  .pbody{padding:18px 20px;display:grid;gap:12px;}
+  .cols3{grid-template-columns:repeat(3,1fr);}
+  .cols2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:760px){.cols3,.cols2{grid-template-columns:1fr;}}
+
+  .step{border:1.3px solid var(--blue-line);background:var(--blue);border-radius:11px;padding:13px 15px;}
+  .step.amber{border-color:var(--amber-line);background:var(--amber);}
+  .step.pink{border-color:var(--pink-line);background:var(--pink);}
+  .slabel{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--step-ink);background:var(--step);border-radius:6px;padding:2px 8px;margin-bottom:8px;letter-spacing:.02em;}
+  .step h3{margin:0 0 5px;font-size:14px;color:var(--ink);}
+  .step p, .step ul{margin:0;color:var(--ink-soft);font-size:13px;}
+  .step ul{padding-left:16px;}
+  .step ul li{margin:2px 0;}
+  .kbd{font-family:var(--mono);font-size:12px;background:var(--step);border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--ink);white-space:nowrap;}
+
+  /* fase captura (inicio) */
+  .phase.start .phead{background:var(--teal-deep);}
+  /* fase resultado */
+  .phase.result{border-color:var(--green-line);}
+  .phase.result .phead{background:var(--green-ink);}
+  .phase.result .step{border-color:var(--green-line);background:var(--green);}
+  .metric{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--green-ink);}
+
+  /* bucle de iteración */
+  .loop{align-self:center;display:flex;align-items:center;gap:10px;border:1.4px dashed var(--teal);color:var(--teal);background:color-mix(in srgb,var(--teal) 7%,transparent);border-radius:999px;padding:8px 18px;font-size:13px;margin:14px 0;max-width:640px;text-align:center;}
+  .loop b{font-weight:700;}
+
+  .legend{margin-top:34px;border-top:1px solid var(--line);padding-top:18px;display:flex;flex-wrap:wrap;gap:16px 26px;font-size:12.5px;color:var(--ink-faint);justify-content:center;}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .sw{width:16px;height:16px;border-radius:4px;border:1.3px solid;flex:none;}
+  .sw.b{background:var(--blue);border-color:var(--blue-line);}
+  .sw.a{background:var(--amber);border-color:var(--amber-line);}
+  .sw.p{background:var(--pink);border-color:var(--pink-line);}
+  .sw.g{background:var(--green);border-color:var(--green-line);}
+
+  footer{margin-top:30px;text-align:center;color:var(--ink-faint);font-size:12.5px;}
+  @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth;}}
+  @media print{.topbar,.toggle{display:none;} body{background:#fff;} .phase{break-inside:avoid;}}
+</style>
+
+<div class="topbar">
+  <div class="in">
+    <span class="brand">CITE Madre de Dios · <b>pipeline de conteo de alevines</b></span>
+    <button class="toggle" id="themeBtn">◐ Tema</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Metodología · Tesis 2026</p>
+    <h1>Pipeline del sistema de conteo automático de alevines</h1>
+    <p>Flujo completo de extremo a extremo: desde la captura del video en campo hasta el conteo automático con visión artificial y deep learning (YOLO).</p>
+  </header>
+
+  <div class="flow">
+
+    <!-- FASE 1 -->
+    <section class="phase start">
+      <div class="phead"><span class="pnum">1</span><span class="picon">📹</span><h2>Captura de datos</h2><span class="tag">Inicio</span></div>
+      <div class="pbody cols3">
+        <div class="step"><span class="slabel">1.1</span><h3>Grabación en campo</h3><p>Videos cenitales de bandejas con alevines en agua, tomados con smartphone.</p></div>
+        <div class="step"><span class="slabel">1.2</span><h3>Dispositivos</h3><p>Smartphone Android (.mp4) e iPhone (.MOV), resolución 4K (2160×3840).</p></div>
+        <div class="step"><span class="slabel">1.3</span><h3>Diversidad de sesiones</h3><p>Distintos días, recipientes e iluminación para robustez del modelo.</p></div>
+      </div>
+    </section>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 2 -->
+    <section class="phase">
+      <div class="phead"><span class="pnum">2</span><span class="picon">🎞️</span><h2>Extracción y curación de frames</h2></div>
+      <div class="pbody cols3">
+        <div class="step"><span class="slabel">2.1</span><h3>Extracción de frames</h3><p>Muestreo de cuadros del video (1 cada N) para obtener imágenes candidatas.</p></div>
+        <div class="step amber"><span class="slabel">2.2</span><h3>Deduplicación perceptual</h3><p>Filtro <b>pHash</b>: descarta cuadros casi idénticos y reduce trabajo de etiquetado.</p></div>
+        <div class="step"><span class="slabel">2.3</span><h3>Selección de útiles</h3><p>Curación manual de los frames diversos y de buena calidad.</p></div>
+      </div>
+    </section>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 3 -->
+    <section class="phase">
+      <div class="phead"><span class="pnum">3</span><span class="picon">🏷️</span><h2>Etiquetado (anotación)</h2></div>
+      <div class="pbody cols3">
+        <div class="step amber"><span class="slabel">3.1</span><h3>Pre-etiquetado automático</h3><p>Cajas borrador generadas con IA (SAM / FastSAM / modelo YOLO) para acelerar.</p></div>
+        <div class="step"><span class="slabel">3.2</span><h3>Revisión manual colaborativa</h3><p>Corrección en <b>LabelImg</b> por 2 anotadores, sincronizados vía Git.</p></div>
+        <div class="step pink"><span class="slabel">3.3</span><h3>Ground truth de conteo</h3><p>Clase única «alevin». El conteo real = número de cajas anotadas (exacto).</p></div>
+      </div>
+    </section>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 4 -->
+    <section class="phase">
+      <div class="phead"><span class="pnum">4</span><span class="picon">🗂️</span><h2>Construcción del dataset</h2></div>
+      <div class="pbody cols3">
+        <div class="step pink"><span class="slabel">4.1</span><h3>Split por video / temporal</h3><p>Partición por sesión y bloques contiguos: <b>evita la fuga de datos</b> (leakage) entre frames casi gemelos.</p></div>
+        <div class="step"><span class="slabel">4.2</span><h3>Train / Validación / Test</h3><p>Conjuntos independientes; el test nunca se ve durante el entrenamiento.</p></div>
+        <div class="step amber"><span class="slabel">4.3</span><h3>Configuración + augmentation</h3><p><span class="kbd">data.yaml</span> y aumento de datos (mosaic, flips, HSV, escala).</p></div>
+      </div>
+    </section>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 5 -->
+    <section class="phase">
+      <div class="phead"><span class="pnum">5</span><span class="picon">🧠</span><h2>Entrenamiento y ajuste</h2></div>
+      <div class="pbody cols3">
+        <div class="step"><span class="slabel">5.1</span><h3>Arquitecturas comparadas</h3><p>YOLOv8n/s y YOLOv11n/s con <b>transfer learning</b> desde pesos COCO.</p></div>
+        <div class="step"><span class="slabel">5.2</span><h3>Ajuste de hiperparámetros</h3><p>Resolución de entrada (960 / 1280 px), épocas, batch, early-stopping.</p></div>
+        <div class="step amber"><span class="slabel">5.3</span><h3>Calibración de confianza</h3><p>Se elige el umbral que <b>minimiza el error de conteo</b>, no solo el mAP.</p></div>
+      </div>
+    </section>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 6 -->
+    <section class="phase">
+      <div class="phead"><span class="pnum">6</span><span class="picon">📊</span><h2>Evaluación del modelo</h2></div>
+      <div class="pbody cols3">
+        <div class="step"><span class="slabel">6.1</span><h3>Métricas de detección</h3><ul><li>Precision · Recall</li><li>mAP@50 · mAP@50-95</li></ul></div>
+        <div class="step pink"><span class="slabel">6.2</span><h3>Métricas de conteo</h3><ul><li>MAE · RMSE · MAPE</li><li>R² · error de lote</li></ul></div>
+        <div class="step"><span class="slabel">6.3</span><h3>Análisis</h3><ul><li>Ablación de datos</li><li>Prueba de generalización</li></ul></div>
+      </div>
+    </section>
+
+    <!-- bucle de iteración -->
+    <div class="loop">♻️&nbsp;<span><b>Ciclo iterativo:</b> si faltan datos o hay condiciones nuevas → volver a capturar, etiquetar y reentrenar (61 → 113 → +120 imágenes).</span></div>
+    <div class="arrow">▼</div>
+
+    <!-- FASE 7 -->
+    <section class="phase result">
+      <div class="phead"><span class="pnum">7</span><span class="picon">🐟</span><h2>Resultado y despliegue</h2><span class="tag">Salida</span></div>
+      <div class="pbody cols3">
+        <div class="step"><span class="slabel">7.1</span><h3>Modelo final</h3><p>YOLOv11n @1280 px — error de conteo de lote <span class="metric">0.17 %</span>.</p></div>
+        <div class="step"><span class="slabel">7.2</span><h3>Conteo automático</h3><p>Número de alevines por imagen/lote, rápido y objetivo (reemplaza la estimación manual).</p></div>
+        <div class="step"><span class="slabel">7.3</span><h3>Despliegue móvil <em>(futuro)</em></h3><p>Exportación a <span class="kbd">.tflite</span> / <span class="kbd">.onnx</span> → app en el celular. 📱</p></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw b"></span> Proceso estándar</span>
+    <span><span class="sw a"></span> Técnica clave / automatización</span>
+    <span><span class="sw p"></span> Decisión metodológica</span>
+    <span><span class="sw g"></span> Resultado final</span>
+  </div>
+
+  <footer>Sistema de deep learning y visión artificial móvil para el conteo automático de alevines · CITE Productivo Madre de Dios, 2026</footer>
+</div>
+
+<script>
+  (function(){
+    var b=document.getElementById('themeBtn'),r=document.documentElement;
+    b.addEventListener('click',function(){
+      var c=r.getAttribute('data-theme');
+      if(!c)c=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      r.setAttribute('data-theme',c==='dark'?'light':'dark');
+    });
+  })();
+</script>
