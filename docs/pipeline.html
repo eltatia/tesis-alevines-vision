@@ -1,223 +1,309 @@
 <title>Pipeline — Conteo automático de alevines</title>
 <style>
   :root{
-    --paper:#eef3f4; --card:#ffffff; --ink:#0f2323; --ink-soft:#40595a; --ink-faint:#6b8384;
-    --line:#cddbdc; --teal:#12726b; --teal-deep:#0d5a54; --teal-ink:#ffffff;
-    --step:#e4edee; --step-ink:#3a5354;
-    --blue:#e0eef4; --blue-line:#9cc3d6;
-    --amber:#f6ecd6; --amber-line:#d8b878;
-    --pink:#f6e2e6; --pink-line:#dca6b1;
-    --green:#dcefe0; --green-line:#7fbd93; --green-ink:#1c6b3b;
-    --accent:#12726b;
-    --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-    --mono: "Cascadia Code", Consolas, ui-monospace, monospace;
-    --shadow: 0 1px 2px rgba(15,35,35,.06), 0 8px 24px rgba(15,35,35,.07);
+    --paper:#ffffff; --ink:#12211f; --ink-soft:#3f5654; --line:#111111;
+    --teal:#147d73; --teal-ink:#ffffff;
+    --gray:#dfe3e3; --gray-ink:#2c3a39; --gray-line:#9aa6a5;
+    --blue:#cfe1f0; --blue-line:#5f96bd;
+    --pink:#f7dde3; --pink-line:#d99aa8;
+    --yellow:#f9e7a6; --yellow-line:#d9bd5c;
+    --green:#c3e6c8; --green-line:#5fa872;
+    --orange:#ef8b3d; --red:#e8524d; --conn:#7d8b8a;
+    --font:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:"Cascadia Code",Consolas,ui-monospace,monospace;
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --paper:#0a1516; --card:#0f1f20; --ink:#e6f0f0; --ink-soft:#a7bcbc; --ink-faint:#7b9394;
-      --line:#22383a; --teal:#1c9c92; --teal-deep:#157a72; --teal-ink:#03110f;
-      --step:#16292b; --step-ink:#bcd0d0;
-      --blue:#132b34; --blue-line:#2e5769;
-      --amber:#2e2612; --amber-line:#6b552a;
-      --pink:#2e1a20; --pink-line:#6b414c;
-      --green:#12291b; --green-line:#2f6b45; --green-ink:#5fce8c;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.4);
+      --paper:#0c1617; --ink:#e7f0ef; --ink-soft:#a9bcbb; --line:#3a4a49;
+      --teal:#1a9c90; --teal-ink:#04120f;
+      --gray:#1c2c2d; --gray-ink:#c3d2d1; --gray-line:#41514f;
+      --blue:#173341; --blue-line:#3d6c86;
+      --pink:#341d24; --pink-line:#7a4a58;
+      --yellow:#322a12; --yellow-line:#6f5c28;
+      --green:#153220; --green-line:#3f7a52;
+      --orange:#e0812f; --red:#d84b46; --conn:#6a7877;
     }
   }
-  :root[data-theme="light"]{
-    --paper:#eef3f4; --card:#fff; --ink:#0f2323; --ink-soft:#40595a; --ink-faint:#6b8384; --line:#cddbdc;
-    --teal:#12726b; --teal-deep:#0d5a54; --teal-ink:#fff; --step:#e4edee; --step-ink:#3a5354;
-    --blue:#e0eef4; --blue-line:#9cc3d6; --amber:#f6ecd6; --amber-line:#d8b878;
-    --pink:#f6e2e6; --pink-line:#dca6b1; --green:#dcefe0; --green-line:#7fbd93; --green-ink:#1c6b3b;
-  }
-  :root[data-theme="dark"]{
-    --paper:#0a1516; --card:#0f1f20; --ink:#e6f0f0; --ink-soft:#a7bcbc; --ink-faint:#7b9394; --line:#22383a;
-    --teal:#1c9c92; --teal-deep:#157a72; --teal-ink:#03110f; --step:#16292b; --step-ink:#bcd0d0;
-    --blue:#132b34; --blue-line:#2e5769; --amber:#2e2612; --amber-line:#6b552a;
-    --pink:#2e1a20; --pink-line:#6b414c; --green:#12291b; --green-line:#2f6b45; --green-ink:#5fce8c;
-  }
+  :root[data-theme="light"]{--paper:#fff;--ink:#12211f;--ink-soft:#3f5654;--line:#111;--teal:#147d73;--teal-ink:#fff;--gray:#dfe3e3;--gray-ink:#2c3a39;--gray-line:#9aa6a5;--blue:#cfe1f0;--blue-line:#5f96bd;--pink:#f7dde3;--pink-line:#d99aa8;--yellow:#f9e7a6;--yellow-line:#d9bd5c;--green:#c3e6c8;--green-line:#5fa872;--orange:#ef8b3d;--red:#e8524d;--conn:#7d8b8a;}
+  :root[data-theme="dark"]{--paper:#0c1617;--ink:#e7f0ef;--ink-soft:#a9bcbb;--line:#3a4a49;--teal:#1a9c90;--teal-ink:#04120f;--gray:#1c2c2d;--gray-ink:#c3d2d1;--gray-line:#41514f;--blue:#173341;--blue-line:#3d6c86;--pink:#341d24;--pink-line:#7a4a58;--yellow:#322a12;--yellow-line:#6f5c28;--green:#153220;--green-line:#3f7a52;--orange:#e0812f;--red:#d84b46;--conn:#6a7877;}
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 70px;}
-
-  .topbar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--paper) 85%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
-  .topbar .in{max-width:1080px;margin:0 auto;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
-  .topbar b{color:var(--teal);}
-  .brand{font-size:13px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;}
-  .toggle{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:var(--font);}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  .bar{position:sticky;top:0;z-index:6;background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .bar .in{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;gap:12px;}
+  .bar .brand{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);}
+  .bar .brand b{color:var(--teal);}
+  .toggle{border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:5px 13px;font-size:12.5px;cursor:pointer;font-family:var(--font);}
   .toggle:hover{color:var(--ink);border-color:var(--teal);}
-  .toggle:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+  h1.tt{text-align:center;font-size:clamp(18px,3vw,26px);margin:26px 18px 4px;text-wrap:balance;}
+  p.sub{text-align:center;color:var(--ink-soft);font-size:14px;margin:0 18px 18px;}
 
-  header.hero{padding:40px 0 20px;text-align:center;}
-  header.hero .eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);font-weight:700;margin:0 0 12px;}
-  header.hero h1{font-size:clamp(24px,4vw,36px);margin:0 auto 12px;max-width:760px;text-wrap:balance;letter-spacing:-.01em;}
-  header.hero p{color:var(--ink-soft);max-width:620px;margin:0 auto;font-size:15.5px;}
+  .scroll{overflow-x:auto;padding:8px 18px 40px;}
+  .canvas{min-width:1200px;max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:6px;}
 
-  /* flujo */
-  .flow{display:flex;flex-direction:column;align-items:stretch;gap:0;}
-  .arrow{align-self:center;color:var(--teal);font-size:26px;line-height:1;margin:10px 0;user-select:none;}
+  /* filas */
+  .row{display:grid;align-items:start;gap:8px;}
+  .row1{grid-template-columns:288px 34px 1fr;}
+  .row2{grid-template-columns:1fr 34px 1.28fr;}
 
-  .phase{background:var(--card);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;}
-  .phead{display:flex;align-items:center;gap:14px;background:var(--teal);color:var(--teal-ink);padding:12px 20px;}
-  .phead .pnum{font-family:var(--mono);font-weight:700;font-size:18px;background:color-mix(in srgb,#000 16%,var(--teal));width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;}
-  .phead .picon{font-size:20px;flex:none;}
-  .phead h2{margin:0;font-size:17px;font-weight:700;letter-spacing:.01em;}
-  .phead .tag{margin-left:auto;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.85;font-family:var(--mono);}
+  /* bloque de fase */
+  .phase{border:2.5px solid var(--line);border-radius:14px;background:var(--paper);overflow:hidden;}
+  .phdr{background:var(--teal);color:var(--teal-ink);font-weight:700;text-align:center;padding:8px 12px;font-size:15px;letter-spacing:.01em;}
+  .phdr.inline{display:inline-block;border-radius:8px;margin:10px 0 0 10px;padding:6px 16px;font-size:14px;}
+  .pin{padding:12px;}
 
-  .pbody{padding:18px 20px;display:grid;gap:12px;}
-  .cols3{grid-template-columns:repeat(3,1fr);}
-  .cols2{grid-template-columns:repeat(2,1fr);}
-  @media(max-width:760px){.cols3,.cols2{grid-template-columns:1fr;}}
+  /* etiqueta gris de subpaso */
+  .lab{display:inline-block;background:var(--gray);color:var(--gray-ink);border:1.4px solid var(--gray-line);border-radius:6px;font-weight:700;font-size:11.5px;padding:3px 9px;margin-bottom:8px;}
+  .lab.plain{border-style:solid;}
 
-  .step{border:1.3px solid var(--blue-line);background:var(--blue);border-radius:11px;padding:13px 15px;}
-  .step.amber{border-color:var(--amber-line);background:var(--amber);}
-  .step.pink{border-color:var(--pink-line);background:var(--pink);}
-  .slabel{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--step-ink);background:var(--step);border-radius:6px;padding:2px 8px;margin-bottom:8px;letter-spacing:.02em;}
-  .step h3{margin:0 0 5px;font-size:14px;color:var(--ink);}
-  .step p, .step ul{margin:0;color:var(--ink-soft);font-size:13px;}
-  .step ul{padding-left:16px;}
-  .step ul li{margin:2px 0;}
-  .kbd{font-family:var(--mono);font-size:12px;background:var(--step);border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--ink);white-space:nowrap;}
+  /* cajas de contenido */
+  .box{border:1.6px solid var(--blue-line);background:var(--blue);border-radius:9px;padding:8px 11px;font-size:12.5px;color:var(--ink);}
+  .box.pink{border-color:var(--pink-line);background:var(--pink);}
+  .box.yellow{border-color:var(--yellow-line);background:var(--yellow);}
+  .box.green{border-color:var(--green-line);background:var(--green);}
+  .box.strong{font-weight:700;text-align:center;}
+  .box ul{margin:0;padding-left:15px;} .box li{margin:2px 0;}
+  .mini{font-size:11px;color:var(--ink-soft);}
 
-  /* fase captura (inicio) */
-  .phase.start .phead{background:var(--teal-deep);}
-  /* fase resultado */
-  .phase.result{border-color:var(--green-line);}
-  .phase.result .phead{background:var(--green-ink);}
-  .phase.result .step{border-color:var(--green-line);background:var(--green);}
-  .metric{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--green-ink);}
+  .dashed{border:1.8px dashed var(--gray-line);border-radius:10px;padding:10px;}
+  .sec-title{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;}
 
-  /* bucle de iteración */
-  .loop{align-self:center;display:flex;align-items:center;gap:10px;border:1.4px dashed var(--teal);color:var(--teal);background:color-mix(in srgb,var(--teal) 7%,transparent);border-radius:999px;padding:8px 18px;font-size:13px;margin:14px 0;max-width:640px;text-align:center;}
-  .loop b{font-weight:700;}
+  .flex{display:flex;gap:8px;align-items:center;}
+  .col{display:flex;flex-direction:column;gap:8px;}
+  .center{justify-content:center;} .wrap{flex-wrap:wrap;}
+  .grow{flex:1;}
 
-  .legend{margin-top:34px;border-top:1px solid var(--line);padding-top:18px;display:flex;flex-wrap:wrap;gap:16px 26px;font-size:12.5px;color:var(--ink-faint);justify-content:center;}
-  .legend span{display:inline-flex;align-items:center;gap:7px;}
-  .sw{width:16px;height:16px;border-radius:4px;border:1.3px solid;flex:none;}
-  .sw.b{background:var(--blue);border-color:var(--blue-line);}
-  .sw.a{background:var(--amber);border-color:var(--amber-line);}
-  .sw.p{background:var(--pink);border-color:var(--pink-line);}
-  .sw.g{background:var(--green);border-color:var(--green-line);}
+  /* iconos y formas */
+  .ic{font-size:26px;line-height:1;flex:none;}
+  .chip{font-family:var(--mono);font-size:10.5px;font-weight:700;border:1.5px solid var(--gray-line);border-radius:6px;padding:2px 6px;background:var(--paper);color:var(--ink);}
+  .arrow{color:var(--conn);font-size:20px;font-weight:700;flex:none;align-self:center;text-align:center;}
+  .arrow.big{font-size:26px;}
+  .down{grid-column:1;justify-self:start;margin:2px 0 2px 120px;color:var(--conn);font-size:26px;font-weight:700;}
 
-  footer{margin-top:30px;text-align:center;color:var(--ink-faint);font-size:12.5px;}
-  @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth;}}
-  @media print{.topbar,.toggle{display:none;} body{background:#fff;} .phase{break-inside:avoid;}}
+  .diamond{width:112px;height:112px;background:var(--red);transform:rotate(45deg);border-radius:10px;display:grid;place-items:center;flex:none;margin:6px 10px;}
+  .diamond span{transform:rotate(-45deg);color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:1.15;width:96px;}
+  .plus{width:40px;height:40px;border-radius:50%;background:var(--orange);color:#fff;font-weight:800;font-size:24px;display:grid;place-items:center;flex:none;}
+  .dot{width:34px;height:34px;border-radius:50%;background:var(--blue);border:1.6px solid var(--blue-line);display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink);}
+  .dot.on{background:var(--green);border-color:var(--green-line);}
+  .dot.off{background:var(--paper);color:transparent;}
+  .stack{display:flex;flex-direction:column;gap:6px;}
+  .funnel{width:46px;height:46px;border-radius:9px;background:var(--blue);border:1.6px solid var(--blue-line);display:grid;place-items:center;font-size:22px;flex:none;}
+  .circle-db{width:44px;height:44px;border-radius:50%;background:var(--blue-line);color:#fff;display:grid;place-items:center;font-size:20px;flex:none;}
+
+  .legend{max-width:1200px;margin:6px auto 0;display:flex;flex-wrap:wrap;gap:12px 22px;justify-content:center;font-size:12px;color:var(--ink-soft);padding:14px 18px 0;border-top:1px solid var(--line);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .sw{width:15px;height:15px;border-radius:4px;border:1.4px solid;flex:none;}
+  .sw.b{background:var(--blue);border-color:var(--blue-line);} .sw.p{background:var(--pink);border-color:var(--pink-line);}
+  .sw.y{background:var(--yellow);border-color:var(--yellow-line);} .sw.g{background:var(--green);border-color:var(--green-line);}
+  footer{text-align:center;color:var(--ink-soft);font-size:12px;padding:22px 18px 46px;}
+  @media print{.bar,.toggle{display:none;} body{background:#fff;}}
 </style>
 
-<div class="topbar">
-  <div class="in">
-    <span class="brand">CITE Madre de Dios · <b>pipeline de conteo de alevines</b></span>
-    <button class="toggle" id="themeBtn">◐ Tema</button>
-  </div>
-</div>
+<div class="bar"><div class="in">
+  <span class="brand">CITE Madre de Dios · <b>pipeline de conteo de alevines</b></span>
+  <button class="toggle" id="t">◐ Tema</button>
+</div></div>
 
-<div class="wrap">
-  <header class="hero">
-    <p class="eyebrow">Metodología · Tesis 2026</p>
-    <h1>Pipeline del sistema de conteo automático de alevines</h1>
-    <p>Flujo completo de extremo a extremo: desde la captura del video en campo hasta el conteo automático con visión artificial y deep learning (YOLO).</p>
-  </header>
+<h1 class="tt">Pipeline del sistema de conteo automático de alevines</h1>
+<p class="sub">De la captura del video en campo al conteo automático con visión artificial (YOLO)</p>
 
-  <div class="flow">
+<div class="scroll">
+<div class="canvas">
+
+  <!-- ===================== FILA 1 ===================== -->
+  <div class="row row1">
 
     <!-- FASE 1 -->
-    <section class="phase start">
-      <div class="phead"><span class="pnum">1</span><span class="picon">📹</span><h2>Captura de datos</h2><span class="tag">Inicio</span></div>
-      <div class="pbody cols3">
-        <div class="step"><span class="slabel">1.1</span><h3>Grabación en campo</h3><p>Videos cenitales de bandejas con alevines en agua, tomados con smartphone.</p></div>
-        <div class="step"><span class="slabel">1.2</span><h3>Dispositivos</h3><p>Smartphone Android (.mp4) e iPhone (.MOV), resolución 4K (2160×3840).</p></div>
-        <div class="step"><span class="slabel">1.3</span><h3>Diversidad de sesiones</h3><p>Distintos días, recipientes e iluminación para robustez del modelo.</p></div>
+    <div class="phase">
+      <div class="phdr inline">1. Extracción de datos</div>
+      <div class="pin">
+        <div class="flex center" style="gap:10px;">
+          <div class="col" style="align-items:center;">
+            <div class="ic">🎥</div><div class="chip">.mp4 / .MOV</div>
+            <div class="mini" style="text-align:center;">Videos 4K<br>de campo</div>
+          </div>
+          <div class="arrow big">→</div>
+          <div class="col" style="align-items:center;">
+            <div class="ic">🖼️</div><div class="chip">.jpg</div>
+            <div class="mini" style="text-align:center;">Frames<br>extraídos</div>
+          </div>
+        </div>
       </div>
-    </section>
-    <div class="arrow">▼</div>
+    </div>
+
+    <div class="arrow big" style="align-self:center;">→</div>
 
     <!-- FASE 2 -->
-    <section class="phase">
-      <div class="phead"><span class="pnum">2</span><span class="picon">🎞️</span><h2>Extracción y curación de frames</h2></div>
-      <div class="pbody cols3">
-        <div class="step"><span class="slabel">2.1</span><h3>Extracción de frames</h3><p>Muestreo de cuadros del video (1 cada N) para obtener imágenes candidatas.</p></div>
-        <div class="step amber"><span class="slabel">2.2</span><h3>Deduplicación perceptual</h3><p>Filtro <b>pHash</b>: descarta cuadros casi idénticos y reduce trabajo de etiquetado.</p></div>
-        <div class="step"><span class="slabel">2.3</span><h3>Selección de útiles</h3><p>Curación manual de los frames diversos y de buena calidad.</p></div>
+    <div class="phase">
+      <div class="phdr">2. Preparación y etiquetado de datos</div>
+      <div class="pin">
+        <div class="flex" style="align-items:stretch;gap:10px;">
+
+          <!-- 2.1 -->
+          <div style="flex:1.1;">
+            <span class="lab">2.1. Exploración y curación</span>
+            <div class="flex" style="align-items:center;gap:6px;">
+              <div class="ic">🔍</div>
+              <div class="diamond"><span>¿Frame útil<br>y no duplicado?</span></div>
+            </div>
+            <div class="flex" style="gap:8px;margin-top:4px;">
+              <div class="mini">No → 🗑️ descartar</div><div class="mini">Sí ↓</div>
+            </div>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <!-- 2.2 -->
+          <div style="flex:1;">
+            <span class="lab">2.2. Manejo de imágenes</span>
+            <div class="col">
+              <div class="flex" style="gap:6px;"><span class="chip">🖼️</span><div class="box grow"><b>Deduplicación pHash</b></div></div>
+              <div class="flex" style="gap:6px;"><span class="chip">🖼️</span><div class="box grow"><b>Selección de útiles</b></div></div>
+            </div>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <!-- 2.3 -->
+          <div style="flex:1.25;">
+            <span class="lab">2.3. Anotación (etiquetado)</span>
+            <div class="box pink" style="margin-bottom:8px;">
+              <div class="flex" style="gap:6px;align-items:center;"><b>Pre-etiquetado auto.</b><span class="arrow">→</span><span class="mini">SAM / FastSAM / YOLO</span></div>
+            </div>
+            <div class="box yellow">
+              <div class="flex" style="gap:6px;align-items:center;"><b>Revisión manual</b><span class="arrow">→</span><span class="mini">LabelImg · 2 anotadores</span></div>
+            </div>
+            <div class="mini" style="margin-top:5px;">Clase única «alevin» · GT = nº de cajas</div>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <!-- dataset limpio -->
+          <div class="col center" style="justify-content:center;">
+            <div class="circle-db">📄</div>
+            <div class="mini" style="text-align:center;">Dataset<br>limpio</div>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <!-- 2.4 -->
+          <div style="flex:.95;">
+            <span class="lab">2.4. División del dataset</span>
+            <div class="col">
+              <div class="box green strong">📊 Test</div>
+              <div class="box strong" style="background:var(--gray);border-color:var(--gray-line);">📄 Train</div>
+              <div class="box yellow strong">Aumento de datos</div>
+            </div>
+          </div>
+
+        </div>
       </div>
-    </section>
-    <div class="arrow">▼</div>
+    </div>
+  </div>
+
+  <!-- flecha en L hacia la fila 2 -->
+  <div class="down">↓</div>
+
+  <!-- ===================== FILA 2 ===================== -->
+  <div class="row row2">
 
     <!-- FASE 3 -->
-    <section class="phase">
-      <div class="phead"><span class="pnum">3</span><span class="picon">🏷️</span><h2>Etiquetado (anotación)</h2></div>
-      <div class="pbody cols3">
-        <div class="step amber"><span class="slabel">3.1</span><h3>Pre-etiquetado automático</h3><p>Cajas borrador generadas con IA (SAM / FastSAM / modelo YOLO) para acelerar.</p></div>
-        <div class="step"><span class="slabel">3.2</span><h3>Revisión manual colaborativa</h3><p>Corrección en <b>LabelImg</b> por 2 anotadores, sincronizados vía Git.</p></div>
-        <div class="step pink"><span class="slabel">3.3</span><h3>Ground truth de conteo</h3><p>Clase única «alevin». El conteo real = número de cajas anotadas (exacto).</p></div>
+    <div class="phase">
+      <div class="phdr">3. Selección de arquitectura</div>
+      <div class="pin">
+        <div class="flex" style="align-items:center;gap:8px;">
+          <div class="col" style="flex:1.15;">
+            <div><span class="lab">3.1. Modelos ligeros</span>
+              <div class="box"><ul><li>YOLOv8n</li><li>YOLOv11n</li></ul></div></div>
+            <div><span class="lab">3.2. Modelos mayores</span>
+              <div class="box"><ul><li>YOLOv8s</li><li>YOLOv11s</li></ul></div></div>
+          </div>
+
+          <div class="plus">+</div>
+
+          <!-- columnas de candidatos -->
+          <div class="flex" style="gap:7px;">
+            <div class="stack">
+              <div class="dot">M₁</div><div class="dot">M₂</div><div class="dot">M₃</div><div class="dot">M₄</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="stack">
+              <div class="dot off">·</div><div class="dot on">M₂</div><div class="dot off">·</div><div class="dot off">·</div>
+            </div>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <div class="col center" style="max-width:150px;">
+            <div class="funnel">🧪</div>
+            <div class="box strong" style="margin-top:4px;">Modelo con mejor<br>desempeño de conteo</div>
+          </div>
+        </div>
       </div>
-    </section>
-    <div class="arrow">▼</div>
+    </div>
+
+    <div class="arrow big" style="align-self:center;">→</div>
 
     <!-- FASE 4 -->
-    <section class="phase">
-      <div class="phead"><span class="pnum">4</span><span class="picon">🗂️</span><h2>Construcción del dataset</h2></div>
-      <div class="pbody cols3">
-        <div class="step pink"><span class="slabel">4.1</span><h3>Split por video / temporal</h3><p>Partición por sesión y bloques contiguos: <b>evita la fuga de datos</b> (leakage) entre frames casi gemelos.</p></div>
-        <div class="step"><span class="slabel">4.2</span><h3>Train / Validación / Test</h3><p>Conjuntos independientes; el test nunca se ve durante el entrenamiento.</p></div>
-        <div class="step amber"><span class="slabel">4.3</span><h3>Configuración + augmentation</h3><p><span class="kbd">data.yaml</span> y aumento de datos (mosaic, flips, HSV, escala).</p></div>
-      </div>
-    </section>
-    <div class="arrow">▼</div>
+    <div class="phase">
+      <div class="phdr">4. Entrenamiento y evaluación del modelo</div>
+      <div class="pin">
+        <div class="flex" style="align-items:stretch;gap:10px;">
 
-    <!-- FASE 5 -->
-    <section class="phase">
-      <div class="phead"><span class="pnum">5</span><span class="picon">🧠</span><h2>Entrenamiento y ajuste</h2></div>
-      <div class="pbody cols3">
-        <div class="step"><span class="slabel">5.1</span><h3>Arquitecturas comparadas</h3><p>YOLOv8n/s y YOLOv11n/s con <b>transfer learning</b> desde pesos COCO.</p></div>
-        <div class="step"><span class="slabel">5.2</span><h3>Ajuste de hiperparámetros</h3><p>Resolución de entrada (960 / 1280 px), épocas, batch, early-stopping.</p></div>
-        <div class="step amber"><span class="slabel">5.3</span><h3>Calibración de confianza</h3><p>Se elige el umbral que <b>minimiza el error de conteo</b>, no solo el mAP.</p></div>
-      </div>
-    </section>
-    <div class="arrow">▼</div>
+          <!-- 4.1 -->
+          <div class="dashed" style="flex:1.15;">
+            <span class="lab">4.1. Entrenamiento y ajuste</span>
+            <div class="flex" style="gap:8px;align-items:center;">
+              <div class="col grow">
+                <div class="box strong">YOLOv8 n / s</div>
+                <div class="box strong">YOLOv11 n / s</div>
+                <div class="box strong">Transfer learning (COCO)</div>
+                <div class="box strong">Resolución 960 / 1280 px</div>
+                <div class="box strong">Data augmentation</div>
+              </div>
+              <div class="arrow">→</div>
+              <div class="col center">
+                <div class="funnel">⚙️</div>
+                <div class="mini" style="text-align:center;">Ajuste de<br>hiperparámetros<br>+ calibración</div>
+              </div>
+            </div>
+          </div>
 
-    <!-- FASE 6 -->
-    <section class="phase">
-      <div class="phead"><span class="pnum">6</span><span class="picon">📊</span><h2>Evaluación del modelo</h2></div>
-      <div class="pbody cols3">
-        <div class="step"><span class="slabel">6.1</span><h3>Métricas de detección</h3><ul><li>Precision · Recall</li><li>mAP@50 · mAP@50-95</li></ul></div>
-        <div class="step pink"><span class="slabel">6.2</span><h3>Métricas de conteo</h3><ul><li>MAE · RMSE · MAPE</li><li>R² · error de lote</li></ul></div>
-        <div class="step"><span class="slabel">6.3</span><h3>Análisis</h3><ul><li>Ablación de datos</li><li>Prueba de generalización</li></ul></div>
-      </div>
-    </section>
+          <!-- 4.2 -->
+          <div class="dashed" style="flex:1;">
+            <span class="lab">4.2. Evaluación del modelo</span>
+            <div class="flex" style="gap:8px;align-items:center;margin-bottom:8px;">
+              <div class="col center"><div class="funnel">💻</div><div class="mini">Prueba /<br>inferencia</div></div>
+              <div class="arrow">→</div>
+              <div class="col center"><div class="circle-db" style="background:var(--green-line);">📊</div><div class="mini">Test<br>data set</div></div>
+            </div>
+            <div class="box">
+              <ul>
+                <li>Matriz de confusión</li>
+                <li>Precision · Recall</li>
+                <li>mAP@50 · mAP@50-95</li>
+                <li>MAE · RMSE · MAPE</li>
+                <li>R² · Error de lote</li>
+              </ul>
+            </div>
+          </div>
 
-    <!-- bucle de iteración -->
-    <div class="loop">♻️&nbsp;<span><b>Ciclo iterativo:</b> si faltan datos o hay condiciones nuevas → volver a capturar, etiquetar y reentrenar (61 → 113 → +120 imágenes).</span></div>
-    <div class="arrow">▼</div>
-
-    <!-- FASE 7 -->
-    <section class="phase result">
-      <div class="phead"><span class="pnum">7</span><span class="picon">🐟</span><h2>Resultado y despliegue</h2><span class="tag">Salida</span></div>
-      <div class="pbody cols3">
-        <div class="step"><span class="slabel">7.1</span><h3>Modelo final</h3><p>YOLOv11n @1280 px — error de conteo de lote <span class="metric">0.17 %</span>.</p></div>
-        <div class="step"><span class="slabel">7.2</span><h3>Conteo automático</h3><p>Número de alevines por imagen/lote, rápido y objetivo (reemplaza la estimación manual).</p></div>
-        <div class="step"><span class="slabel">7.3</span><h3>Despliegue móvil <em>(futuro)</em></h3><p>Exportación a <span class="kbd">.tflite</span> / <span class="kbd">.onnx</span> → app en el celular. 📱</p></div>
+        </div>
       </div>
-    </section>
+    </div>
   </div>
 
-  <div class="legend">
-    <span><span class="sw b"></span> Proceso estándar</span>
-    <span><span class="sw a"></span> Técnica clave / automatización</span>
-    <span><span class="sw p"></span> Decisión metodológica</span>
-    <span><span class="sw g"></span> Resultado final</span>
-  </div>
-
-  <footer>Sistema de deep learning y visión artificial móvil para el conteo automático de alevines · CITE Productivo Madre de Dios, 2026</footer>
+</div>
 </div>
 
+<div class="legend">
+  <span><span class="sw b"></span> Proceso / dato</span>
+  <span><span class="sw p"></span> Automatización con IA</span>
+  <span><span class="sw y"></span> Trabajo manual / transformación</span>
+  <span><span class="sw g"></span> Conjunto de prueba / resultado</span>
+</div>
+<footer>Sistema de deep learning y visión artificial móvil para el conteo automático de alevines · CITE Productivo Madre de Dios, 2026</footer>
+
 <script>
-  (function(){
-    var b=document.getElementById('themeBtn'),r=document.documentElement;
-    b.addEventListener('click',function(){
-      var c=r.getAttribute('data-theme');
-      if(!c)c=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-      r.setAttribute('data-theme',c==='dark'?'light':'dark');
-    });
-  })();
+  (function(){var b=document.getElementById('t'),r=document.documentElement;
+   b.addEventListener('click',function(){var c=r.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');r.setAttribute('data-theme',c==='dark'?'light':'dark');});})();
 </script>
