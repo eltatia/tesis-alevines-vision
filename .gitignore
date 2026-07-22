@@ -118,3 +118,11 @@ yolo11s.pt
 
 # Frames 4K extraídos de videos nuevos (el lote de etiquetado tiene copias reducidas)
 data/frames/nuevos/
+data/labeling_collab/lote_nuevos_gabriel/_borrador_original/
+data/labeling_collab/lote_nuevos_gabriel/RESUMEN.md
+data/labeling_collab/lote_nuevos_gabriel/resumen.csv
+data/labeling_collab/lote_nuevos_gabriel/_to_delete/
+data/labeling_collab/lote_nuevos_companero/_borrador_original/
+data/labeling_collab/lote_nuevos_companero/RESUMEN.md
+data/labeling_collab/lote_nuevos_companero/resumen.csv
+data/labeling_collab/lote_nuevos_companero/_to_delete/
