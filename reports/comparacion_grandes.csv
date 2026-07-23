@@ -1,0 +1,4 @@
+modelo,precision,recall,mAP50,mAP50_95,conf,MAE,RMSE,MAPE,R2,acc_conteo,bias,pred_total,real_total,agg_err,agg_pct,weights
+v11m_1280,0.8013,0.8155,0.8329,0.5013,0.45,14.74,32.06,13.57,0.9089,86.43,-7.17,2453,2618,165,6.3,runs/detect/gen_v11m_1280/weights/best.pt
+v11n_1536,0.7699,0.8212,0.8278,0.4907,0.35,12.96,29.45,10.57,0.9231,89.43,-2.96,2550,2618,68,2.6,runs/detect/gen_v11n_1536/weights/best.pt
+v11m_1536,0.8044,0.8025,0.8361,0.5058,0.25,15.13,28.91,12.51,0.9259,87.49,1.74,2658,2618,40,1.53,runs/detect/gen_v11m_1536/weights/best.pt

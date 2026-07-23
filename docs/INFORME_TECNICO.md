@@ -290,3 +290,34 @@ Para contar en video sin duplicar el mismo pez entre frames se cuentan **IDs ún
 **Matiz honesto:** aún el mejor tracker sobrecuenta algo (frag ≈ 1.9). Para una **bandeja estática**, contar por frame (mediana de detecciones/frame, que es estable: ~28 en v177, ~16 en v178) es más fiable que acumular IDs. El tracking rinde de verdad en el escenario de **peces pasando por un punto/canal** (conteo de flujo), que queda como trabajo futuro.
 
 **Referencias tracking:** ByteTrack (arXiv:2110.06864), BoT-SORT (arXiv:2206.14651), Ultralytics track docs.
+
+### 11.3 Campaña para maximizar el mAP@50-95 (modelos grandes + alta resolución)
+El mAP@50-95 (exige IoU muy alto = cajas casi calcadas) se había estancado en ~0.48 en todos los experimentos previos. Se lanzó una campaña para empujarlo. Fuente: [`reports/comparacion_grandes.csv`](../reports/comparacion_grandes.csv)
+
+| Modelo | imgsz | mAP@50 | **mAP@50-95** | MAPE | R² | Error lote |
+|---|---|---|---|---|---|---|
+| base (YOLOv11n) | 1280 | 0.825 | 0.483 | 12.5 % | 0.936 | 2.6 % |
+| YOLOv11m | 1280 | 0.833 | 0.501 | 13.6 % | 0.909 | 6.3 % |
+| YOLOv11n | 1536 | 0.828 | 0.491 | 10.6 % | 0.923 | 2.6 % |
+| **YOLOv11m** | **1536** | **0.836** | **0.506** | 12.5 % | 0.926 | **1.5 %** |
+
+**Descartado antes:** TTA (aumentación en inferencia) **bajó** el mAP@50-95 (0.483 → 0.477) — con objetos densos la aumentación multiescala desalinea. Auditoría de tamaño: los objetos **no son pequeños** (lado mediano 113 px, 0 % COCO-small), así que la resolución ayuda menos de lo esperado.
+
+**Resultado:** modelo grande + alta resolución sube el mAP@50-95 de 0.483 → **0.506** (mejor: YOLOv11m@1536). Ganancia real pero **incremental**; no llega a 0.60 solo por tamaño/resolución.
+
+**Diagnóstico decisivo — dónde está el verdadero techo:**
+
+| Split | mAP@50 | mAP@50-95 |
+|---|---|---|
+| **TRAIN** | 0.923 | **0.623** |
+| TEST | 0.836 | 0.506 |
+
+En **train el modelo SÍ alcanza 0.62** de mAP@50-95. Conclusión (que corrige la hipótesis inicial): **las etiquetas NO son el techo duro** (soportan ≥0.62); el limitante es la **brecha de generalización** (train 0.62 → test 0.51, ≈11 pts). Es decir, alcanzar **0.60 en test es posible**, pero el cuello de botella es **falta de datos y diversidad**, no el modelo ni la representación.
+
+**Recomendaciones para superar 0.60 de mAP@50-95 (por prioridad):**
+1. **Más datos diversos** — más sesiones/condiciones/volumen para cerrar la brecha train→test. Es la palanca #1 (coherente con la ablación §4.4).
+2. **Modelo de mayor capacidad** — YOLOv11m@1536 ya da el mejor resultado (0.506); usarlo como "modelo de exactitud" (no para móvil, es más pesado).
+3. **Test set más grande** — con solo 23 imgs la estimación es ruidosa.
+4. **Segmentación / cajas orientadas (OBB)** — subiría el propio techo de etiquetado (IoU más consistente en peces alargados); no es imprescindible para llegar a 0.60, pero sí para ir más allá.
+
+**Nota de dominio (móvil vs exactitud):** para el objetivo móvil sigue conviniendo un modelo **nano** (v11n@1280/1536); YOLOv11m es para el pipeline de máxima exactitud offline.
