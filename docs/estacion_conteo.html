@@ -1,0 +1,215 @@
+<title>Estación de conteo de alevines — Especificación</title>
+<style>
+  :root{
+    --paper:#eef3f4;--card:#ffffff;--ink:#0f2221;--ink-soft:#43595a;--ink-faint:#6c8283;
+    --line:#cfdcdc;--teal:#12726b;--teal-deep:#0d564f;--teal-ink:#fff;
+    --blue:#dcebf3;--blue-line:#8fbdd6;--amber:#f5ead2;--amber-line:#d3b978;
+    --green:#d9efdd;--green-line:#79bb8f;--water:#cfe8f2;--water-line:#7cb8d4;
+    --shadow:0 1px 2px rgba(15,34,33,.06),0 8px 22px rgba(15,34,33,.07);
+    --font:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:"Cascadia Code",Consolas,ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --paper:#0b1516;--card:#0f1f20;--ink:#e7f0ef;--ink-soft:#a8bcbb;--ink-faint:#7b9392;
+    --line:#22383a;--teal:#1c9c90;--teal-deep:#14756c;--teal-ink:#03110f;
+    --blue:#12303c;--blue-line:#356981;--amber:#2f2712;--amber-line:#6d5729;
+    --green:#12291c;--green-line:#357a4c;--water:#122d38;--water-line:#356f88;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="light"]{--paper:#eef3f4;--card:#fff;--ink:#0f2221;--ink-soft:#43595a;--ink-faint:#6c8283;--line:#cfdcdc;--teal:#12726b;--teal-deep:#0d564f;--teal-ink:#fff;--blue:#dcebf3;--blue-line:#8fbdd6;--amber:#f5ead2;--amber-line:#d3b978;--green:#d9efdd;--green-line:#79bb8f;--water:#cfe8f2;--water-line:#7cb8d4;}
+  :root[data-theme="dark"]{--paper:#0b1516;--card:#0f1f20;--ink:#e7f0ef;--ink-soft:#a8bcbb;--ink-faint:#7b9392;--line:#22383a;--teal:#1c9c90;--teal-deep:#14756c;--teal-ink:#03110f;--blue:#12303c;--blue-line:#356981;--amber:#2f2712;--amber-line:#6d5729;--green:#12291c;--green-line:#357a4c;--water:#122d38;--water-line:#356f88;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 60px;}
+  .bar{position:sticky;top:0;z-index:6;background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .bar .in{max-width:1080px;margin:0 auto;padding:9px 20px;display:flex;justify-content:space-between;align-items:center;}
+  .bar .b{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);} .bar .b b{color:var(--teal);}
+  .toggle{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:999px;padding:5px 13px;font-size:12.5px;cursor:pointer;font-family:var(--font);}
+  .toggle:hover{color:var(--ink);border-color:var(--teal);}
+  header.hero{padding:38px 0 8px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(23px,3.6vw,32px);margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance;}
+  header.hero p{color:var(--ink-soft);max-width:640px;margin:0;font-size:15px;}
+  h2{font-size:19px;margin:40px 0 4px;display:flex;align-items:center;gap:10px;}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--teal-ink);background:var(--teal);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;}
+  .sub{color:var(--ink-faint);font-size:13.5px;margin:2px 0 16px;}
+
+  /* diagrama de capas */
+  .diagram{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start;}
+  @media(max-width:820px){.diagram{grid-template-columns:1fr;}}
+  .stack{position:relative;padding:6px 0;}
+  .stack::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;border-left:2px dashed var(--line);transform:translateX(-50%);}
+  .layer{position:relative;background:var(--card);border:1.6px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin:9px 0;padding:11px 14px 11px 12px;display:flex;align-items:center;gap:12px;}
+  .layer .num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--teal);background:color-mix(in srgb,var(--teal) 13%,var(--card));border:1.4px solid var(--teal);border-radius:7px;width:28px;height:28px;display:grid;place-items:center;flex:none;}
+  .layer .ic{font-size:26px;flex:none;width:34px;text-align:center;}
+  .layer .tx b{display:block;font-size:14px;}
+  .layer .tx span{font-size:12.5px;color:var(--ink-soft);}
+  .layer.cam{border-color:var(--teal);} .layer.cam .tx b{color:var(--teal);}
+  .layer.lid{background:var(--amber);border-color:var(--amber-line);}
+  .layer.box{background:var(--blue);border-color:var(--blue-line);}
+  .layer.tray{background:var(--card);}
+  .layer.water{background:var(--water);border-color:var(--water-line);}
+  .layer.base{background:var(--card);border-style:dashed;color:var(--ink-faint);}
+  .arrowdown{text-align:center;color:var(--teal);font-size:15px;margin:-4px 0;}
+
+  .compute{background:var(--card);border:1.6px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px;}
+  .compute h3{margin:0 0 4px;font-size:15px;}
+  .compute .note{font-size:12.5px;color:var(--ink-faint);margin:0 0 12px;}
+  .cstack{display:flex;flex-direction:column;gap:8px;}
+  .cpart{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--teal) 5%,var(--card));border:1.3px solid var(--line);border-radius:9px;padding:8px 10px;}
+  .cpart .ic{font-size:20px;width:26px;text-align:center;flex:none;}
+  .cpart b{font-size:13px;} .cpart span{font-size:12px;color:var(--ink-soft);}
+  .link{display:inline-flex;align-items:center;gap:5px;background:var(--water);border:1.3px dashed var(--water-line);border-radius:8px;padding:8px 11px;font-size:12.5px;color:var(--ink-soft);margin-top:12px;}
+
+  /* tabla */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-top:6px;}
+  table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);min-width:720px;}
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
+  thead th{background:color-mix(in srgb,var(--teal) 12%,var(--card));color:var(--ink);font-weight:700;font-size:12px;letter-spacing:.02em;}
+  tbody tr:last-child td{border-bottom:none;}
+  tr.opt td{background:color-mix(in srgb,var(--amber) 40%,var(--card));}
+  td a{color:var(--teal);font-weight:600;text-decoration:none;} td a:hover{text-decoration:underline;}
+  .search{font-family:var(--mono);font-size:11.5px;background:color-mix(in srgb,var(--teal) 8%,var(--card));border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--ink);}
+  .fn{color:var(--ink-soft);}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px;}
+  .pill.req{background:var(--green);color:var(--green-line);border:1px solid var(--green-line);}
+  .pill.opt{background:var(--amber);color:var(--amber-line);border:1px solid var(--amber-line);}
+  .totrow{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px;}
+  .tot{flex:1;min-width:200px;background:var(--card);border:1.6px solid var(--line);border-left:4px solid var(--teal);border-radius:11px;padding:13px 15px;box-shadow:var(--shadow);}
+  .tot .v{font-family:var(--mono);font-size:22px;font-weight:700;} .tot .l{font-size:12.5px;color:var(--ink-soft);}
+  .callout{border:1px solid var(--line);border-left:4px solid var(--teal);background:color-mix(in srgb,var(--teal) 5%,var(--card));border-radius:11px;padding:14px 16px;margin-top:20px;font-size:13.5px;color:var(--ink-soft);}
+  .callout b{color:var(--ink);}
+  footer{margin-top:34px;text-align:center;color:var(--ink-faint);font-size:12px;}
+  @media print{.bar,.toggle{display:none;} body{background:#fff;} .layer,.tot,.compute{break-inside:avoid;}}
+</style>
+
+<div class="bar"><div class="in">
+  <span class="b">CITE Madre de Dios · <b>estación de conteo</b></span>
+  <button class="toggle" id="t">◐ Tema</button>
+</div></div>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Especificación de hardware · Tesis 2026</p>
+    <h1>Estación estandarizada de conteo de alevines</h1>
+    <p>Un entorno de captura controlado (luz difusa + fondo uniforme + bandeja de una capa) sobre una Raspberry Pi 5 que corre el modelo YOLO y muestra el conteo en pantalla. Diseño desde cero, económico y replicable.</p>
+  </header>
+
+  <!-- ================= DIAGRAMA FÍSICO POR CAPAS ================= -->
+  <h2><span class="n">A</span> Diagrama físico — capas en orden</h2>
+  <p class="sub">Vista despiezada de arriba hacia abajo. Cada capa se monta sobre la siguiente; la unidad de cómputo va al costado y se conecta a la cámara.</p>
+
+  <div class="diagram">
+    <div class="stack">
+      <div class="layer cam"><div class="num">1</div><div class="ic">📷</div><div class="tx"><b>Cámara (Camera Module 3)</b><span>Cenital, altura fija, apunta hacia abajo</span></div></div>
+      <div class="arrowdown">▼</div>
+      <div class="layer lid"><div class="num">2</div><div class="ic">🔆</div><div class="tx"><b>Tapa + LED difusor</b><span>Techo de la caja de luz: iluminación pareja, sin sombras</span></div></div>
+      <div class="arrowdown">▼</div>
+      <div class="layer box"><div class="num">3</div><div class="ic">⬜</div><div class="tx"><b>Caja de luz (paredes + fondo blanco)</b><span>Encierra la escena, elimina reflejos y fondo con basura</span></div></div>
+      <div class="arrowdown">▼</div>
+      <div class="layer tray"><div class="num">4</div><div class="ic">🟦</div><div class="tx"><b>Bandeja mate, ancha y poco profunda</b><span>Fondo de alto contraste con el pez</span></div></div>
+      <div class="arrowdown">▼</div>
+      <div class="layer water"><div class="num">5</div><div class="ic">💧</div><div class="tx"><b>Agua 1–2 cm + alevines</b><span>Poca profundidad → peces en UNA sola capa (menos oclusión)</span></div></div>
+      <div class="arrowdown">▼</div>
+      <div class="layer base"><div class="num">6</div><div class="ic">▬</div><div class="tx"><b>Base / mesa nivelada</b><span>Soporte estable de toda la estación</span></div></div>
+    </div>
+
+    <div class="compute">
+      <h3>🧠 Unidad de cómputo (al costado)</h3>
+      <p class="note">Se conecta a la cámara por cable plano y muestra el conteo. Se apila así:</p>
+      <div class="cstack">
+        <div class="cpart"><div class="ic">🖥️</div><div><b>Pantalla táctil 7"</b> <span>— muestra el conteo y controla</span></div></div>
+        <div class="cpart"><div class="ic">⚡</div><div><b>AI HAT+ (opcional)</b> <span>— acelera la IA, va apilado sobre la Pi</span></div></div>
+        <div class="cpart"><div class="ic">▦</div><div><b>Raspberry Pi 5 + cooler</b> <span>— corre el modelo YOLO</span></div></div>
+        <div class="cpart"><div class="ic">🔌</div><div><b>Fuente 27W USB-C</b> <span>— energía</span></div></div>
+      </div>
+      <div class="link">🔗 Cámara ⇄ Pi 5 por <b>&nbsp;cable adaptador 22↔15&nbsp;</b> (imprescindible)</div>
+    </div>
+  </div>
+
+  <!-- ================= TABLA DE COMPONENTES ================= -->
+  <h2><span class="n">B</span> Lista de componentes</h2>
+  <p class="sub">Los links de Perú son <b>búsquedas de MercadoLibre</b> (muestran los listados vigentes; el precio/vendedor cambia). <span class="pill req">imprescindible</span> <span class="pill opt">opcional</span></p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Producto</th><th>Comprar en Perú</th><th>Cómo buscarlo</th><th>Función</th></tr></thead>
+    <tbody>
+      <tr><td><b>Raspberry Pi 5 (8GB)</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/raspberry-pi-5-8gb">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">Raspberry Pi 5 8GB</span></td>
+        <td class="fn">Cerebro: corre el modelo YOLO y hace el conteo</td></tr>
+
+      <tr><td><b>Cooler activo oficial</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/raspberry-pi-5-active-cooler">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">Raspberry Pi 5 Active Cooler</span></td>
+        <td class="fn">Enfría el procesador para carga continua (evita throttling)</td></tr>
+
+      <tr><td><b>Fuente 27W USB-C (5V/5A)</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/fuente-raspberry-pi-5-27w">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">fuente Raspberry Pi 5 27W USB-C 5A</span></td>
+        <td class="fn">Energía estable (la Pi 5 exige 5A)</td></tr>
+
+      <tr><td><b>MicroSD 64GB A2</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/microsd-64gb-a2-sandisk">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">microSD 64GB A2 SanDisk Extreme</span></td>
+        <td class="fn">Sistema operativo + guarda las fotos capturadas</td></tr>
+
+      <tr><td><b>Camera Module 3</b> (12MP autofoco) <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/raspberry-pi-camera-module-3">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">Raspberry Pi Camera Module 3</span></td>
+        <td class="fn">Captura la imagen cenital de la bandeja</td></tr>
+
+      <tr><td><b>Cable cámara Pi 5 (22↔15)</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/cable-camara-raspberry-pi-5-csi">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">cable cámara Raspberry Pi 5 CSI 22 pin</span></td>
+        <td class="fn">Conecta la cámara a la Pi 5 (la Pi 5 usa conector distinto — sin esto no funciona)</td></tr>
+
+      <tr><td><b>Pantalla táctil 7"</b> (Touch Display 2 o HDMI) <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/pantalla-tactil-raspberry-pi-7-pulgadas">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">pantalla táctil Raspberry Pi 7 pulgadas</span></td>
+        <td class="fn">Muestra el conteo en vivo y sirve de control</td></tr>
+
+      <tr><td><b>Caja de luz LED 40 cm</b> (softbox) <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/caja-de-luz-fotografia-40cm-led">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">caja de luz fotografía producto 40cm LED softbox</span></td>
+        <td class="fn">⭐ Luz difusa sin sombras + fondo uniforme → elimina reflejos, brillos y falsos positivos</td></tr>
+
+      <tr><td><b>Bandeja blanca mate, plana</b> <span class="pill req">req</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/bandeja-plastica-blanca-plana-poco-profunda">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">bandeja / charola plástica blanca plana</span></td>
+        <td class="fn">Sostiene los alevines en una sola capa; fondo de contraste</td></tr>
+
+      <tr class="opt"><td><b>AI HAT+ 13 TOPS (Hailo)</b> <span class="pill opt">opc</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/raspberry-pi-ai-hat-hailo">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">Raspberry Pi AI HAT Hailo 13 TOPS</span></td>
+        <td class="fn">Acelera la IA (más FPS). No hace falta si solo cuentas fotos (la Pi lo hace en CPU)</td></tr>
+
+      <tr class="opt"><td><b>Soporte/brazo cámara cenital</b> <span class="pill opt">opc</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/soporte-brazo-camara-cenital">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">soporte brazo cámara cenital / copy stand</span></td>
+        <td class="fn">Fija la cámara a altura constante si no usas el agujero de la caja de luz</td></tr>
+
+      <tr class="opt"><td><b>Filtro polarizador (CPL)</b> <span class="pill opt">opc</span></td>
+        <td><a href="https://listado.mercadolibre.com.pe/filtro-polarizador-cpl">MercadoLibre&nbsp;PE ↗</a></td>
+        <td><span class="search">filtro polarizador circular CPL</span></td>
+        <td class="fn">Reduce el brillo de la superficie del agua</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="totrow">
+    <div class="tot"><div class="v">~US$ 260</div><div class="l">Versión base (sin AI HAT) — ≈ S/ 970</div></div>
+    <div class="tot"><div class="v">~US$ 330</div><div class="l">Con AI HAT (más FPS) — ≈ S/ 1 230</div></div>
+  </div>
+
+  <div class="callout">
+    <b>Recomendación de compra:</b> empieza por la <b>versión base (sin AI HAT)</b>. Lo que más sube la precisión no es la cámara ni el acelerador, sino la <b>caja de luz</b> (elimina reflejos/sombras/logos) y la <b>bandeja poco profunda</b> (elimina la oclusión). El AI HAT lo sumas después solo si necesitas más velocidad.
+    <br><br>
+    <b>Referencia oficial</b> (para confirmar modelos exactos): <a href="https://www.raspberrypi.com/products/raspberry-pi-5/">Pi 5</a> · <a href="https://www.raspberrypi.com/products/camera-module-3/">Camera Module 3</a> · <a href="https://www.raspberrypi.com/products/camera-cable/">cable cámara Pi 5</a> · <a href="https://www.raspberrypi.com/products/touch-display-2/">Touch Display 2</a> · <a href="https://www.raspberrypi.com/products/ai-hat/">AI HAT+</a>. En Perú, si no encuentras en MercadoLibre, revisa <b>AliExpress</b> (busca los mismos términos).
+  </div>
+
+  <footer>Estación de conteo de alevines · CITE Productivo Madre de Dios, 2026 · Diagrama y BOM generados para la tesis</footer>
+</div>
+
+<script>(function(){var b=document.getElementById('t'),r=document.documentElement;b.addEventListener('click',function(){var c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');r.setAttribute('data-theme',c==='dark'?'light':'dark');});})();</script>
